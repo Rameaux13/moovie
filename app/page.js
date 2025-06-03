@@ -1,6 +1,8 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Home() {
   const [films, setFilms] = useState([]);
@@ -21,157 +23,85 @@ export default function Home() {
   }, [search]);
 
   return (
-    <main className="container">
-      <h1 className="title">Moovie</h1>
+    <main style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <h1 style={{ color: 'purple', fontSize: '2.5rem', marginBottom: 20 }}>
+        🎬 Moovie
+      </h1>
 
-      <div className="search-container">
+      <div style={{ marginBottom: 20 }}>
         <input
           type="text"
           placeholder="Rechercher un film..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="search-input"
+          style={{
+            padding: 10,
+            width: '100%',
+            maxWidth: 400,
+            fontSize: 16,
+            borderRadius: 8,
+            border: '1px solid #ccc'
+          }}
         />
       </div>
 
-      <h2>{isSearching ? 'Films trouvés' : 'Films populaires'}</h2>
+      <h2 style={{ fontSize: '1.5rem', marginBottom: 10 }}>
+        {isSearching ? 'Résultats de recherche' : 'Films populaires'}
+      </h2>
 
-      <div className="films-grid">
-        {films && films.length > 0 ? (
-          films.map((film) => (
-            <Link
-              href={`/film/${film.id}`}
-              key={film.id}
-              className="film-card-link"
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 20,
+          justifyContent: 'center'
+        }}
+      >
+        {films.map((film) => (
+          <Link
+            href={`/film/${film.id}`}
+            key={film.id}
+            style={{ textDecoration: 'none', color: 'inherit' }}
+          >
+            <div
+              style={{
+                width: 200,
+                border: '1px solid #ccc',
+                borderRadius: 10,
+                overflow: 'hidden',
+                position: 'relative',
+                cursor: 'pointer',
+                backgroundColor: '#fff',
+                transition: 'transform 0.2s',
+              }}
             >
-              <div className="film-card">
-                {film.poster_path ? (
-                  <img
-                    src={`https://image.tmdb.org/t/p/w300${film.poster_path}`}
-                    alt={film.title}
-                    className="film-poster"
-                  />
-                ) : (
-                  <div className="no-poster">Pas d'affiche</div>
-                )}
-                <div className="film-info">
-                  <strong>{film.title}</strong>
-                  <br />
-                  Sortie : {film.release_date || 'N/A'}
-                </div>
+              <Image
+                src={`https://image.tmdb.org/t/p/w300${film.poster_path}`}
+                alt={film.title}
+                width={300}
+                height={450}
+                style={{ width: '100%', height: 'auto' }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: 'rgba(0,0,0,0.7)',
+                  color: 'white',
+                  padding: 10,
+                  fontSize: 14,
+                }}
+              >
+                <strong>{film.title}</strong>
+                <br />
+                Sortie : {film.release_date}
               </div>
-            </Link>
-          ))
-        ) : (
-          <p>Aucun film trouvé.</p>
-        )}
+            </div>
+          </Link>
+        ))}
       </div>
-
-      <style jsx>{`
-        .container {
-          padding: 20px;
-          max-width: 1000px;
-          margin: 0 auto;
-          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        .title {
-          color: purple;
-          font-size: 3rem;
-          font-weight: 700;
-          margin-bottom: 20px;
-          text-align: center;
-        }
-        .search-container {
-          text-align: center;
-          margin-bottom: 30px;
-        }
-        .search-input {
-          padding: 12px 15px;
-          width: 100%;
-          max-width: 400px;
-          font-size: 16px;
-          border-radius: 8px;
-          border: 1px solid #ccc;
-          transition: border-color 0.3s ease;
-        }
-        .search-input:focus {
-          border-color: purple;
-          outline: none;
-          box-shadow: 0 0 6px rgba(128, 0, 128, 0.5);
-        }
-        h2 {
-          margin-bottom: 15px;
-          color: #333;
-          font-weight: 600;
-        }
-        .films-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill,minmax(200px,1fr));
-          gap: 20px;
-        }
-        .film-card-link {
-          text-decoration: none;
-          color: inherit;
-        }
-        .film-card {
-          border: 1px solid #ccc;
-          border-radius: 10px;
-          overflow: hidden;
-          cursor: pointer;
-          position: relative;
-          transition: box-shadow 0.3s ease;
-          background: white;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-        }
-        .film-card:hover {
-          box-shadow: 0 8px 20px rgba(128,0,128,0.4);
-        }
-        .film-poster {
-          width: 100%;
-          border-bottom: 1px solid #ddd;
-          object-fit: cover;
-          aspect-ratio: 2 / 3;
-        }
-        .no-poster {
-          width: 100%;
-          height: 300px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          color: #999;
-          font-style: italic;
-          background: #eee;
-        }
-        .film-info {
-          padding: 10px;
-          text-align: center;
-          font-size: 14px;
-          color: #333;
-          background: #fafafa;
-          width: 100%;
-        }
-
-        /* Responsive */
-        @media (max-width: 600px) {
-          .title {
-            font-size: 2.2rem;
-          }
-          .films-grid {
-            grid-template-columns: repeat(auto-fill,minmax(140px,1fr));
-            gap: 12px;
-          }
-          .film-info {
-            font-size: 12px;
-            padding: 8px;
-          }
-          .no-poster {
-            height: 210px;
-          }
-        }
-      `}</style>
     </main>
   );
 }
