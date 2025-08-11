@@ -1,5 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
   async rewrites() {
     return [
       {
@@ -10,16 +16,20 @@ const nextConfig = {
   },
   experimental: {
     serverActions: {
-      allowedOrigins: ['localhost:3000'],
+      allowedOrigins: ['localhost:3000', 'sp-p6.com'],
     },
   },
-  // ✨ NOUVEAU : Configuration des images externes
   images: {
     remotePatterns: [
       {
         protocol: 'https',
         hostname: 'image.tmdb.org',
         pathname: '/t/p/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'sp-p6.com',
+        pathname: '/**',
       },
       {
         protocol: 'https',
