@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 interface Genre {
   id: string
@@ -22,6 +24,10 @@ interface Movie {
 }
 
 export default function MoviesAdmin() {
+  // ✅ AJOUT DE LA GESTION DE SESSION
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  
   const [movies, setMovies] = useState<Movie[]>([])
   const [loading, setLoading] = useState(true)
   const [showAddMovieModal, setShowAddMovieModal] = useState(false)
@@ -31,9 +37,23 @@ export default function MoviesAdmin() {
   const [movieDescription, setMovieDescription] = useState('')
   const [message, setMessage] = useState('')
 
+  // ✅ PROTECTION DE LA ROUTE ADMIN
   useEffect(() => {
+    if (status === 'loading') return // Encore en chargement
+    
+    if (!session) {
+      router.push('/login')
+      return
+    }
+    
+    if (session.user?.role !== 'ADMIN') {
+      router.push('/home')
+      return
+    }
+    
+    // Si tout est OK, charger les données
     fetchMovies()
-  }, [])
+  }, [session, status, router])
 
   const showMessage = (text: string) => {
     setMessage(text)
@@ -138,23 +158,40 @@ export default function MoviesAdmin() {
     }
   }
 
- const handleDeleteMovie = async (movie: Movie) => {
-  try {
-    const response = await fetch(`/api/admin/movies/${movie.id}`, {
-      method: 'DELETE'
-    })
-    
-    if (response.ok) {
-      showMessage('Film supprimé avec succès!')
-      fetchMovies()
-    } else {
+  const handleDeleteMovie = async (movie: Movie) => {
+    try {
+      const response = await fetch(`/api/admin/movies/${movie.id}`, {
+        method: 'DELETE'
+      })
+      
+      if (response.ok) {
+        showMessage('Film supprimé avec succès!')
+        fetchMovies()
+      } else {
+        showMessage('Erreur lors de la suppression du film')
+      }
+    } catch (error) {
+      console.error('Erreur:', error)
       showMessage('Erreur lors de la suppression du film')
     }
-  } catch (error) {
-    console.error('Erreur:', error)
-    showMessage('Erreur lors de la suppression du film')
   }
-}
+
+  // ✅ GESTION DES ÉTATS DE CHARGEMENT ET D'AUTHENTIFICATION
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-white text-lg">Chargement de l'authentification...</div>
+      </div>
+    )
+  }
+
+  if (!session || session.user?.role !== 'ADMIN') {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-white text-lg">Redirection en cours...</div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
