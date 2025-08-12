@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 interface User {
   id: number
@@ -41,6 +43,10 @@ interface ApiRevenue {
 }
 
 export default function SubscriptionsAdmin() {
+  // ✅ AJOUT DE LA GESTION DE SESSION
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
   const [apiStats, setApiStats] = useState<ApiStats>({
     total: 0,
@@ -62,10 +68,24 @@ export default function SubscriptionsAdmin() {
   const [users, setUsers] = useState<User[]>([])
   const [message, setMessage] = useState('')
 
+  // ✅ PROTECTION DE LA ROUTE ADMIN
   useEffect(() => {
+    if (status === 'loading') return // Encore en chargement
+    
+    if (!session) {
+      router.push('/login')
+      return
+    }
+    
+    if (session.user?.role !== 'ADMIN') {
+      router.push('/home')
+      return
+    }
+    
+    // Si tout est OK, charger les données
     fetchSubscriptions()
     fetchUsers()
-  }, [])
+  }, [session, status, router])
 
   const showMessage = (text: string) => {
     setMessage(text)
@@ -270,6 +290,23 @@ export default function SubscriptionsAdmin() {
       default:
         return <span className="bg-gray-600 text-white px-2 py-1 rounded text-xs">{plan}</span>
     }
+  }
+
+  // ✅ GESTION DES ÉTATS DE CHARGEMENT ET D'AUTHENTIFICATION
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-white text-lg">Chargement de l'authentification...</div>
+      </div>
+    )
+  }
+
+  if (!session || session.user?.role !== 'ADMIN') {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-white text-lg">Redirection en cours...</div>
+      </div>
+    )
   }
 
   if (loading) {
