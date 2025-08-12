@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
 
 interface DashboardStats {
   totalUsers: number
@@ -10,6 +12,10 @@ interface DashboardStats {
 }
 
 export default function AdminDashboard() {
+  // ✅ AJOUT DE LA GESTION DE SESSION
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     totalVideos: 0,
@@ -22,9 +28,23 @@ export default function AdminDashboard() {
   const [movieDescription, setMovieDescription] = useState('')
   const [message, setMessage] = useState('')
 
+  // ✅ PROTECTION DE LA ROUTE ADMIN
   useEffect(() => {
+    if (status === 'loading') return // Encore en chargement
+    
+    if (!session) {
+      router.push('/login')
+      return
+    }
+    
+    if (session.user?.role !== 'ADMIN') {
+      router.push('/home')
+      return
+    }
+    
+    // Si tout est OK, charger les données
     fetchDashboardStats()
-  }, [])
+  }, [session, status, router])
 
   const showMessage = (text: string) => {
     setMessage(text)
@@ -32,69 +52,86 @@ export default function AdminDashboard() {
   }
 
   const fetchDashboardStats = async () => {
-  try {
-    setLoading(true)
+    try {
+      setLoading(true)
+      
+      // ✅ NOUVEAU : Appel à notre vraie API
+      const response = await fetch('/api/admin/stats')
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la récupération des stats')
+      }
+      
+      const result = await response.json()
+      
+      // ✅ Mapper les données de l'API vers notre interface
+      setStats({
+        totalUsers: result.data.totalUsers,
+        totalVideos: result.data.totalMovies,  // Attention: totalMovies → totalVideos
+        totalSubscriptions: result.data.activeSubscriptions, // Utiliser les abonnements actifs
+        totalRevenue: result.data.totalRevenue
+      })
+      
+      setLoading(false)
+    } catch (error) {
+      console.error('Erreur récupération stats:', error)
+      setLoading(false)
+    }
+  }
+
+  const handleAddMovie = async (e: React.FormEvent) => {
+    e.preventDefault()
     
-    // ✅ NOUVEAU : Appel à notre vraie API
-    const response = await fetch('/api/admin/stats')
-    
-    if (!response.ok) {
-      throw new Error('Erreur lors de la récupération des stats')
+    // Vérifier que les champs sont remplis
+    if (!movieTitle.trim() || !movieDescription.trim()) {
+      showMessage('Veuillez remplir tous les champs')
+      return
     }
     
-    const result = await response.json()
-    
-    // ✅ Mapper les données de l'API vers notre interface
-    setStats({
-      totalUsers: result.data.totalUsers,
-      totalVideos: result.data.totalMovies,  // Attention: totalMovies → totalVideos
-      totalSubscriptions: result.data.activeSubscriptions, // Utiliser les abonnements actifs
-      totalRevenue: result.data.totalRevenue
-    })
-    
-    setLoading(false)
-  } catch (error) {
-    console.error('Erreur récupération stats:', error)
-    setLoading(false)
-  }
-}
-
-const handleAddMovie = async (e: React.FormEvent) => {
-  e.preventDefault()
-  
-  // Vérifier que les champs sont remplis
-  if (!movieTitle.trim() || !movieDescription.trim()) {
-    showMessage('Veuillez remplir tous les champs')
-    return
-  }
-  
-  try {
-    const response = await fetch('/api/admin/movies', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        title: movieTitle.trim(),
-        description: movieDescription.trim()
+    try {
+      const response = await fetch('/api/admin/movies', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: movieTitle.trim(),
+          description: movieDescription.trim()
+        })
       })
-    })
-    
-    if (response.ok) {
-      // Film ajouté avec succès
-      showMessage('Film ajouté avec succès!')
-      setMovieTitle('')
-      setMovieDescription('')
-      setShowAddMovieModal(false)
-      fetchDashboardStats() // Recharger les stats
-    } else {
+      
+      if (response.ok) {
+        // Film ajouté avec succès
+        showMessage('Film ajouté avec succès!')
+        setMovieTitle('')
+        setMovieDescription('')
+        setShowAddMovieModal(false)
+        fetchDashboardStats() // Recharger les stats
+      } else {
+        showMessage('Erreur lors de l\'ajout du film')
+      }
+    } catch (error) {
+      console.error('Erreur:', error)
       showMessage('Erreur lors de l\'ajout du film')
     }
-  } catch (error) {
-    console.error('Erreur:', error)
-    showMessage('Erreur lors de l\'ajout du film')
   }
-}
+
+  // ✅ GESTION DES ÉTATS DE CHARGEMENT ET D'AUTHENTIFICATION
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-white text-lg">Chargement de l'authentification...</div>
+      </div>
+    )
+  }
+
+  if (!session || session.user?.role !== 'ADMIN') {
+    return (
+      <div className="flex items-center justify-center min-h-64">
+        <div className="text-white text-lg">Redirection en cours...</div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
