@@ -43,7 +43,7 @@ export async function PUT(
       }, { status: 404 })
     }
 
-    // 5. Mettre à jour le film
+    // 5. Mettre à jour le film (avec updated_at qui existe dans le schema)
     const updatedMovie = await prisma.video.update({
       where: { id: movieId },
       data: {
@@ -129,16 +129,34 @@ export async function DELETE(
       }, { status: 404 })
     }
 
-    // 4. Supprimer d'abord les relations (genres, favoris, historique)
+    // 4. Supprimer d'abord les relations (NOMS CORRECTS selon ton schema)
+    // Utiliser videoId au lieu de video_id pour VideoGenre
     await prisma.videoGenre.deleteMany({
       where: { videoId: movieId }
     })
 
+    // Favoris anciens (compatibilité)
     await prisma.favorite.deleteMany({
       where: { video_id: movieId }
     })
 
+    // Favoris profils (nouveau système)
+    await prisma.profileFavorite.deleteMany({
+      where: { video_id: movieId }
+    })
+
+    // Historique ancien (compatibilité)
     await prisma.watchHistory.deleteMany({
+      where: { video_id: movieId }
+    })
+
+    // Historique profils (nouveau système)
+    await prisma.profileWatchHistory.deleteMany({
+      where: { video_id: movieId }
+    })
+
+    // Téléchargements
+    await prisma.download.deleteMany({
       where: { video_id: movieId }
     })
 
