@@ -1,0 +1,264 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 👤 TABLE USERS (Utilisateurs) - ✨ MODIFIÉE POUR MULTI-PROFILS
+model User {
+  id                   Int      @id @default(autoincrement())
+  email                String   @unique
+  password             String
+  name                 String
+  role                 String   @default("USER") // USER ou ADMIN
+  subscription_status  String   @default("INACTIVE") // ACTIVE, INACTIVE, EXPIRED
+  preferencesCompleted Boolean  @default(false)
+  active_profile_id    Int?     // ✨ NOUVEAU : Profil actif en session
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  // Relations
+  subscriptions       Subscription[]
+  watch_history       WatchHistory[]        // ✨ GARDE pour compatibilité (migration vers profils)
+  favorites          Favorite[]            // ✨ GARDE pour compatibilité (migration vers profils)
+  userPreferences    UserPreference[]      // ✨ GARDE pour compatibilité (migration vers profils)
+  passwordResetTokens PasswordResetToken[]
+  downloads          Download[]
+  profiles           Profile[]             // ✨ NOUVEAU : Relation vers les profils
+  active_profile     Profile?              @relation("ActiveProfile", fields: [active_profile_id], references: [id])
+
+  @@map("users")
+}
+
+// 👨‍👩‍👧‍👦 TABLE PROFILES (Profils famille) - ✨ NOUVEAU MULTI-PROFILS
+model Profile {
+  id        Int      @id @default(autoincrement())
+  user_id   Int      // Propriétaire du profil (compte principal)
+  name      String   // Nom du profil (ex: "Papa", "Maman", "Lucas")
+  avatar_url String? // Image du profil (optionnel)
+  is_main   Boolean  @default(false) // Profil principal (migrate les données existantes)
+  is_child  Boolean  @default(false) // Profil enfant (contrôle parental)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  // Relations
+  user              User                   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  favorites         ProfileFavorite[]
+  watch_history     ProfileWatchHistory[]
+  preferences       ProfilePreference[]
+  active_users      User[]                 @relation("ActiveProfile") // ✨ Utilisateurs ayant ce profil actif
+
+  @@map("profiles")
+}
+
+// 🎬 TABLE VIDEOS (Films/Séries) - ✨ MODIFIÉE POUR MULTI-PROFILS
+model Video {
+  id              Int      @id @default(autoincrement())
+  title           String
+  description     String   @db.Text
+  duration        Int      // en minutes
+  genre           String
+  release_date    DateTime
+  thumbnail_url   String
+  video_file_path String
+  views           Int      @default(0)
+  rating          Float    @default(0.0)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  watch_history         WatchHistory[]         // ✨ GARDE pour compatibilité
+  favorites            Favorite[]             // ✨ GARDE pour compatibilité
+  video_genres         VideoGenre[]
+  downloads            Download[]
+  profile_favorites    ProfileFavorite[]      // ✨ NOUVEAU : Favoris par profil
+  profile_watch_history ProfileWatchHistory[] // ✨ NOUVEAU : Historique par profil
+
+  @@map("videos")
+}
+
+// 💳 TABLE SUBSCRIPTIONS (Abonnements)
+model Subscription {
+  id                        Int      @id @default(autoincrement())
+  user_id                   Int
+  plan_type                 String   // BASIC, PREMIUM, FAMILLE
+  start_date                DateTime
+  end_date                  DateTime
+  status                    String   // ACTIVE, CANCELLED, EXPIRED, PENDING
+  moneyfusion_subscription_id String? // Référence MoneyFusion
+  created_at                DateTime @default(now())
+  updated_at                DateTime @updatedAt
+
+  // Relations
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@map("subscriptions")
+}
+
+// 📺 TABLE WATCH_HISTORY (Historique de visionnage) - ✨ GARDE pour compatibilité
+model WatchHistory {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  video_id   Int
+  watched_at DateTime @default(now())
+  progress   Float    @default(0.0) // Pourcentage 0-100
+
+  // Relations
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [video_id], references: [id], onDelete: Cascade)
+
+  // Un utilisateur ne peut avoir qu'un seul historique par vidéo
+  @@unique([user_id, video_id])
+  @@map("watch_history")
+}
+
+// 📺 TABLE PROFILE_WATCH_HISTORY (Historique par profil) - ✨ NOUVEAU
+model ProfileWatchHistory {
+  id         Int      @id @default(autoincrement())
+  profile_id Int
+  video_id   Int
+  watched_at DateTime @default(now())
+  progress   Float    @default(0.0) // Pourcentage 0-100
+
+  // Relations
+  profile Profile @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+  video   Video   @relation(fields: [video_id], references: [id], onDelete: Cascade)
+
+  // Un profil ne peut avoir qu'un seul historique par vidéo
+  @@unique([profile_id, video_id])
+  @@map("profile_watch_history")
+}
+
+// ❤️ TABLE FAVORITES (Favoris) - ✨ GARDE pour compatibilité
+model Favorite {
+  id       Int      @id @default(autoincrement())
+  user_id  Int
+  video_id Int
+  added_at DateTime @default(now())
+
+  // Relations
+  user  User  @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  video Video @relation(fields: [video_id], references: [id], onDelete: Cascade)
+
+  // Un utilisateur ne peut ajouter qu'une fois la même vidéo en favori
+  @@unique([user_id, video_id])
+  @@map("favorites")
+}
+
+// ❤️ TABLE PROFILE_FAVORITES (Favoris par profil) - ✨ NOUVEAU
+model ProfileFavorite {
+  id         Int      @id @default(autoincrement())
+  profile_id Int
+  video_id   Int
+  added_at   DateTime @default(now())
+
+  // Relations
+  profile Profile @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+  video   Video   @relation(fields: [video_id], references: [id], onDelete: Cascade)
+
+  // Un profil ne peut ajouter qu'une fois la même vidéo en favori
+  @@unique([profile_id, video_id])
+  @@map("profile_favorites")
+}
+
+// 🔑 TABLE PASSWORD_RESET_TOKENS (Tokens de réinitialisation)
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+  userId    Int?
+
+  // Relations
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
+// 🎭 TABLE GENRES (Genres de films) - ✨ MODIFIÉE POUR MULTI-PROFILS
+model Genre {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  icon        String   // emoji ou nom d'icône
+  color       String   // couleur hex pour le design
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  userPreferences    UserPreference[]     // ✨ GARDE pour compatibilité
+  videoGenres        VideoGenre[]
+  profilePreferences ProfilePreference[]  // ✨ NOUVEAU : Préférences par profil
+  
+  @@map("genres")
+}
+
+// 👤🎭 TABLE USER_PREFERENCES (Préférences utilisateur) - ✨ GARDE pour compatibilité
+model UserPreference {
+  id     String @id @default(cuid())
+  userId Int
+  genreId String
+  
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  genre  Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, genreId])
+  @@map("user_preferences")
+}
+
+// 🎭 TABLE PROFILE_PREFERENCES (Préférences par profil) - ✨ NOUVEAU
+model ProfilePreference {
+  id        String @id @default(cuid())
+  profile_id Int
+  genre_id   String
+  
+  // Relations
+  profile Profile @relation(fields: [profile_id], references: [id], onDelete: Cascade)
+  genre   Genre   @relation(fields: [genre_id], references: [id], onDelete: Cascade)
+  
+  @@unique([profile_id, genre_id])
+  @@map("profile_preferences")
+}
+
+// 🎬🎭 TABLE VIDEO_GENRES (Genres par vidéo)
+model VideoGenre {
+  id      String @id @default(cuid())
+  videoId Int
+  genreId String
+  
+  // Relations
+  video   Video  @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+  
+  @@unique([videoId, genreId])
+  @@map("video_genres")
+}
+
+// 📥 TABLE DOWNLOADS (Téléchargements) - ✨ FONCTIONNALITÉ OFFLINE
+model Download {
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  video_id        Int
+  download_path   String   // Chemin du fichier téléchargé chiffré
+  original_title  String   // Titre du film pour affichage
+  file_size       BigInt   // Taille du fichier en bytes
+  download_date   DateTime @default(now())
+  expires_at      DateTime // Date d'expiration (30 jours)
+  is_expired      Boolean  @default(false)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  user            User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  video           Video    @relation(fields: [video_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, video_id]) // Un utilisateur ne peut télécharger qu'une fois le même film
+  @@map("downloads")
+}
