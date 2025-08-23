@@ -7,6 +7,10 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+
+  experimental: {
+    missingSuspenseWithCSRBailout: false,  // ← Ajouter cette ligne
+  },
   
   async rewrites() {
     return [
