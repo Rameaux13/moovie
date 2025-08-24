@@ -66,27 +66,31 @@ export default function PreferencesPage() {
     })
 
     console.log('📥 Réponse API - Status:', response.status)
-    console.log('📥 Réponse API - OK:', response.ok)
     
     if (response.ok) {
       const data = await response.json()
-      console.log('✅ Données reçues:', data)
+      console.log('✅ Préférences sauvegardées:', data)
       
-      console.log('🔄 Mise à jour de la session...')
-      await update()
+      // Redirection immédiate sans attendre la session
+      console.log('🏠 Redirection immédiate vers /home...')
+      router.replace('/home') // replace au lieu de push pour éviter le back
       
-      console.log('🏠 Redirection vers /home...')
-      router.push('/home')
+      // Optionnel: forcer un hard reload de la page
+      // window.location.replace('/home')
       
     } else {
-      const errorText = await response.text()
-      console.error('❌ Erreur API:', response.status, errorText)
+      const errorData = await response.json().catch(() => ({ error: 'Erreur inconnue' }))
+      console.error('❌ Erreur API:', response.status, errorData)
+      
+      // Afficher un message d'erreur à l'utilisateur
+      alert(`Erreur: ${errorData.error || 'Erreur lors de la sauvegarde'}`)
     }
   } catch (error) {
-    console.error('❌ Erreur dans catch:', error)
+    console.error('❌ Erreur réseau:', error)
+    alert('Erreur de connexion. Vérifiez votre connexion internet.')
   } finally {
     setSaving(false)
-    console.log('🏁 Fin du processus de sauvegarde')
+    console.log('🏁 Fin du processus')
   }
 }
 
