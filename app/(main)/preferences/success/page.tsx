@@ -2,11 +2,9 @@
 
 import { useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
 
 export default function PreferencesSuccessPage() {
-  const { data: session, update } = useSession()
-  const router = useRouter()
+  const { update } = useSession()
 
   useEffect(() => {
     const redirectToHome = async () => {

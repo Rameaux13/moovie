@@ -51,45 +51,43 @@ export default function PreferencesPage() {
   }
 
   const handleSavePreferences = async () => {
-  if (selectedGenres.length < 3 || isProcessing) return
+    if (selectedGenres.length < 3 || saving) return
 
-  console.log('🚀 Début sauvegarde, genres sélectionnés:', selectedGenres)
-  setIsProcessing(true)
-  setSaving(true)
-  
-  try {
-    console.log('📤 Envoi requête vers /api/user/preferences...')
+    console.log('🚀 Début sauvegarde, genres sélectionnés:', selectedGenres)
+    setSaving(true)
     
-    const response = await fetch('/api/user/preferences', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ genreIds: selectedGenres })
-    })
+    try {
+      console.log('📤 Envoi requête vers /api/user/preferences...')
+      
+      const response = await fetch('/api/user/preferences', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ genreIds: selectedGenres })
+      })
 
-    console.log('📥 Réponse API - Status:', response.status)
-    
-    if (response.ok) {
-      const data = await response.json()
-      console.log('✅ Préférences sauvegardées:', data)
+      console.log('📥 Réponse API - Status:', response.status)
       
-      console.log('🏠 Redirection vers page de succès...')
-      // Rediriger vers une page intermédiaire qui ne dépend pas du middleware
-      window.location.href = '/preferences/success'
-      
-    } else {
-      const errorData = await response.json().catch(() => ({ error: 'Erreur inconnue' }))
-      console.error('❌ Erreur API:', response.status, errorData)
-      alert(`Erreur: ${errorData.error || 'Erreur lors de la sauvegarde'}`)
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ Préférences sauvegardées:', data)
+        
+        console.log('🏠 Redirection vers page de succès...')
+        // Rediriger vers une page intermédiaire qui ne dépend pas du middleware
+        window.location.href = '/preferences/success'
+        
+      } else {
+        const errorData = await response.json().catch(() => ({ error: 'Erreur inconnue' }))
+        console.error('❌ Erreur API:', response.status, errorData)
+        alert(`Erreur: ${errorData.error || 'Erreur lors de la sauvegarde'}`)
+      }
+    } catch (error) {
+      console.error('❌ Erreur réseau:', error)
+      alert('Erreur de connexion. Vérifiez votre connexion internet.')
+    } finally {
+      setSaving(false)
+      console.log('🏁 Fin du processus')
     }
-  } catch (error) {
-    console.error('❌ Erreur réseau:', error)
-    alert('Erreur de connexion. Vérifiez votre connexion internet.')
-  } finally {
-    setSaving(false)
-    setIsProcessing(false)
-    console.log('🏁 Fin du processus')
   }
-}
 
   if (loading) {
     return (
@@ -197,7 +195,7 @@ export default function PreferencesPage() {
                 <span>Sauvegarde...</span>
               </div>
             ) : (
-              'Continuer vers MOOVIE'
+              'Continuer vers NETFLIX'
             )}
           </button>
         </div>
