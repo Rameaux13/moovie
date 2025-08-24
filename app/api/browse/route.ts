@@ -7,23 +7,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const genreFilter = searchParams.get('genre')
 
-    // Si un genre spécifique est demandé
+    // ✅ NOUVEAU : Si un genre spécifique est demandé (filtrage simple par colonne genre)
     if (genreFilter && genreFilter !== 'Tous les genres') {
       const videosByGenre = await prisma.video.findMany({
         where: {
-          video_genres: {  // ← CORRIGÉ
-            some: {
-              genre: {
-                name: genreFilter
-              }
-            }
-          }
-        },
-        include: {
-          video_genres: {  // ← CORRIGÉ
-            include: {
-              genre: true
-            }
+          genre: {
+            contains: genreFilter,
+            mode: 'insensitive' // Recherche insensible à la casse
           }
         },
         orderBy: {
@@ -38,74 +28,82 @@ export async function GET(request: Request) {
       })
     }
 
-    // Sinon, récupérer tous les films organisés par genres
-    const genres = await prisma.genre.findMany({
-      include: {
-        videoGenres: {  // ← ATTENTION : Ici c'est l'autre sens de la relation
-          include: {
-            video: true
-          },
-          take: 10 // Limiter à 10 films par genre pour le catalogue
-        }
-      },
-      orderBy: {
-        name: 'asc'
-      }
-    })
-
-    // Restructurer les données pour avoir films par genre
-    const moviesByGenre = genres.map(genre => ({
-      id: genre.id,
-      name: genre.name,
-      color: genre.color,
-      icon: genre.icon,
-      movies: genre.videoGenres.map(vg => vg.video)  // ← CORRIGÉ
-    })).filter(genre => genre.movies.length > 0) // Seulement les genres qui ont des films
-
-    // Récupérer aussi tous les films récents (pour section "Nouveautés")
-    const recentMovies = await prisma.video.findMany({
-      take: 20,
+    // ✅ NOUVEAU : Récupérer tous les films et les organiser par genre
+    const allVideos = await prisma.video.findMany({
       orderBy: {
         created_at: 'desc'
-      },
-      include: {
-        video_genres: {  // ← CORRIGÉ
-          include: {
-            genre: true
-          }
-        }
       }
     })
 
-    // Récupérer les films les plus populaires (simulation avec ceux qui ont le plus de vues)
-    const popularMovies = await prisma.video.findMany({
-      take: 20,
-      orderBy: {
-        views: 'desc'  // ← CORRIGÉ
-      },
-      include: {
-        video_genres: {  // ← CORRIGÉ
-          include: {
-            genre: true
-          }
-        }
+    // ✅ NOUVEAU : Grouper les films par genre
+    const genreMap = new Map<string, typeof allVideos>()
+    
+    allVideos.forEach(video => {
+      const genre = video.genre || 'Autre'
+      if (!genreMap.has(genre)) {
+        genreMap.set(genre, [])
       }
+      genreMap.get(genre)!.push(video)
     })
+
+    // ✅ NOUVEAU : Convertir en format attendu par le frontend
+    const moviesByGenre = Array.from(genreMap.entries()).map(([genreName, movies], index) => {
+      // Icônes par genre
+      const genreIcons: Record<string, string> = {
+        'Action': '💥',
+        'Romance': '💕', 
+        'Comédie': '😂',
+        'Drame': '🎭',
+        'Horreur': '👻',
+        'Science-Fiction': '🚀',
+        'Thriller': '🔪',
+        'Aventure': '⚔️',
+        'Animation': '🎨',
+        'Documentaire': '📽️',
+        'Fantastique': '🧙‍♂️',
+        'Autre': '🎬'
+      }
+
+      return {
+        id: `genre-${index}`,
+        name: genreName,
+        color: '#dc2626', // Rouge Netflix
+        icon: genreIcons[genreName] || '🎬',
+        movies: movies.slice(0, 12) // Limiter à 12 films par genre
+      }
+    }).filter(genre => genre.movies.length > 0)
+
+    // ✅ NOUVEAU : Films récents (20 plus récents)
+    const recentMovies = allVideos
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 20)
+
+    // ✅ NOUVEAU : Films populaires (triés par vues, puis par rating)
+    const popularMovies = allVideos
+      .sort((a, b) => {
+        // Trier par vues d'abord, puis par rating
+        const viewDiff = (b.views || 0) - (a.views || 0)
+        if (viewDiff !== 0) return viewDiff
+        return (b.rating || 0) - (a.rating || 0)
+      })
+      .slice(0, 20)
 
     return NextResponse.json({
       success: true,
       moviesByGenre,
       recentMovies,
       popularMovies,
-      totalGenres: genres.length
+      totalMovies: allVideos.length,
+      totalGenres: moviesByGenre.length
     })
 
   } catch (error) {
-    console.error('Erreur lors de la récupération des films:', error)
+    console.error('❌ Erreur API browse:', error)
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Erreur lors de la récupération des films' 
+        error: 'Erreur lors de la récupération des films',
+        details: error instanceof Error ? error.message : 'Erreur inconnue'
       },
       { status: 500 }
     )
