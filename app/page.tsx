@@ -92,10 +92,7 @@ export default function HomePage() {
           <h1 className="text-3xl sm:text-4xl font-bold text-red-600 tracking-wider">
             NETFLIX
           </h1>
-          <select className="ml-4 sm:ml-6 bg-gray-800 text-white border border-gray-600 px-2 sm:px-3 py-1 sm:py-2 rounded focus:outline-none focus:border-red-500 hover:bg-gray-700 transition-colors text-sm sm:text-base">
-            <option value="fr" className="bg-gray-800 text-white"> Français</option>
-            <option value="en" className="bg-gray-800 text-white"> English</option>
-          </select>
+         
         </div>
         <Link 
           href="/login" 
@@ -110,7 +107,7 @@ export default function HomePage() {
           Films et séries en illimité,<br />et bien plus
         </h2>
         <p className="text-lg sm:text-xl mb-6 sm:mb-8">
-          À partir de 3000fcfa . Annulable à tout moment.
+          À partir de 200fcfa . Annulable à tout moment.
         </p>
         
         <div className="max-w-md mx-auto">
