@@ -255,124 +255,173 @@ export default function HomePage() {
   )
 
   // ✨ NOUVEAU : Carrousel responsive avec support tactile
-  const Carousel = ({ movies, currentIndex, setCurrentIndex }: { movies: Video[], currentIndex: number, setCurrentIndex: (index: number) => void }) => {
-    // Responsive - 2 films sur mobile, 3 sur tablette, 5 sur desktop
-    const [moviesPerPage, setMoviesPerPage] = useState(5)
-    
-    useEffect(() => {
-      const updateMoviesPerPage = () => {
-        if (window.innerWidth < 640) {
-          setMoviesPerPage(2) // Mobile
-        } else if (window.innerWidth < 1024) {
-          setMoviesPerPage(3) // Tablette
-        } else {
-          setMoviesPerPage(5) // Desktop
-        }
-      }
+  // ✨ Updated MovieCard component for better mobile display
+const MovieCard = ({ movie }: { movie: Video }) => (
+  <div className="group relative flex-none w-full sm:w-1/3 lg:w-1/5 px-2 sm:px-3 cursor-pointer transition-all duration-300 hover:scale-105">
+    <div className="relative overflow-hidden rounded-lg">
+      <img 
+        src={movie.poster_url} 
+        alt={movie.title}
+        className="h-[200px] sm:h-[300px] w-full object-cover transition-transform duration-300 group-hover:scale-110"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          target.src = `https://via.placeholder.com/200x300/1a1a1a/ffffff?text=${encodeURIComponent(movie.title)}`;
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       
-      updateMoviesPerPage()
-      window.addEventListener('resize', updateMoviesPerPage)
-      return () => window.removeEventListener('resize', updateMoviesPerPage)
-    }, [])
-
-    const maxIndex = Math.max(0, movies.length - moviesPerPage)
-
-    const nextSlide = () => {
-      setCurrentIndex(Math.min(currentIndex + 1, maxIndex))
-    }
-
-    const prevSlide = () => {
-      setCurrentIndex(Math.max(currentIndex - 1, 0))
-    }
-
-    // Support swipe tactile
-    const [touchStart, setTouchStart] = useState(0)
-    const [touchEnd, setTouchEnd] = useState(0)
-
-    const handleTouchStart = (e: React.TouchEvent) => {
-      setTouchStart(e.targetTouches[0].clientX)
-    }
-
-    const handleTouchMove = (e: React.TouchEvent) => {
-      setTouchEnd(e.targetTouches[0].clientX)
-    }
-
-    const handleTouchEnd = () => {
-      if (!touchStart || !touchEnd) return
-      
-      const distance = touchStart - touchEnd
-      const isLeftSwipe = distance > 50
-      const isRightSwipe = distance < -50
-
-      if (isLeftSwipe) {
-        nextSlide()
-      }
-      if (isRightSwipe) {
-        prevSlide()
-      }
-    }
-
-    return (
-      <div className="relative overflow-hidden">
-        <div 
-          className="flex transition-transform duration-300 ease-in-out touch-pan-x"
-          style={{ 
-            transform: `translateX(-${currentIndex * (100 / moviesPerPage)}%)` 
-          }}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
+      {/* Play button overlay */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <button 
+          onClick={() => router.push(`/watch/${movie.id}`)}
+          className="bg-white/20 backdrop-blur-sm rounded-full p-3 sm:p-4 hover:bg-white/30 transition-colors"
         >
-          {movies.map((movie) => (
-            <div 
-              key={movie.id} 
-              className="flex-none w-1/2 sm:w-1/3 lg:w-1/5 px-1 sm:px-2"
-            >
-              <MovieCard movie={movie} />
-            </div>
+          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Rating badge */}
+      <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm rounded-lg px-2 py-1 flex items-center space-x-1">
+        <span className="text-yellow-400 text-xs sm:text-sm">⭐</span>
+        <span className="text-white text-xs sm:text-sm font-semibold">{movie.rating}</span>
+      </div>
+    </div>
+    
+    <div className="mt-2 sm:mt-3">
+      <h4 className="text-white font-semibold text-xs sm:text-sm line-clamp-1">{movie.title}</h4>
+      <div className="flex items-center space-x-1 sm:space-x-2 mt-1 text-xs text-gray-400">
+        <span>{movie.year}</span>
+        <span>•</span>
+        <span className="hidden sm:block">{formatDuration(movie.duration)}</span>
+        <span className="sm:hidden">{Math.floor(movie.duration / 60)}h</span>
+        <span>•</span>
+        <span className="truncate">{movie.genre}</span>
+      </div>
+    </div>
+  </div>
+)
+
+// ✨ Updated Carousel component for single movie display on mobile
+const Carousel = ({ movies, currentIndex, setCurrentIndex }: { movies: Video[], currentIndex: number, setCurrentIndex: (index: number) => void }) => {
+  // Responsive - 1 film on mobile, 3 on tablet, 5 on desktop
+  const [moviesPerPage, setMoviesPerPage] = useState(1)
+  
+  useEffect(() => {
+    const updateMoviesPerPage = () => {
+      if (window.innerWidth < 640) {
+        setMoviesPerPage(1) // Mobile: 1 movie
+      } else if (window.innerWidth < 1024) {
+        setMoviesPerPage(3) // Tablet: 3 movies
+      } else {
+        setMoviesPerPage(5) // Desktop: 5 movies
+      }
+    }
+    
+    updateMoviesPerPage()
+    window.addEventListener('resize', updateMoviesPerPage)
+    return () => window.removeEventListener('resize', updateMoviesPerPage)
+  }, [])
+
+  const maxIndex = Math.max(0, movies.length - moviesPerPage)
+
+  const nextSlide = () => {
+    setCurrentIndex(Math.min(currentIndex + 1, maxIndex))
+  }
+
+  const prevSlide = () => {
+    setCurrentIndex(Math.max(currentIndex - 1, 0))
+  }
+
+  // Support swipe tactile
+  const [touchStart, setTouchStart] = useState(0)
+  const [touchEnd, setTouchEnd] = useState(0)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > 50
+    const isRightSwipe = distance < -50
+
+    if (isLeftSwipe) {
+      nextSlide()
+    }
+    if (isRightSwipe) {
+      prevSlide()
+    }
+  }
+
+  return (
+    <div className="relative overflow-hidden">
+      <div 
+        className="flex transition-transform duration-300 ease-in-out touch-pan-x snap-x snap-mandatory"
+        style={{ 
+          transform: `translateX(-${currentIndex * (100 / moviesPerPage)}%)` 
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {movies.map((movie) => (
+          <div 
+            key={movie.id} 
+            className="flex-none w-full sm:w-1/3 lg:w-1/5 snap-center"
+          >
+            <MovieCard movie={movie} />
+          </div>
+        ))}
+      </div>
+      
+      {/* Navigation buttons - Larger and more visible on mobile */}
+      {currentIndex > 0 && (
+        <button
+          onClick={prevSlide}
+          className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/80 hover:bg-black/90 rounded-full p-3 sm:p-4 transition-all z-10 shadow-lg"
+        >
+          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+      
+      {currentIndex < maxIndex && (
+        <button
+          onClick={nextSlide}
+          className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/80 hover:bg-black/90 rounded-full p-3 sm:p-4 transition-all z-10 shadow-lg"
+        >
+          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      )}
+
+      {/* Pagination indicators for mobile */}
+      {maxIndex > 0 && (
+        <div className="flex justify-center mt-4 space-x-2 sm:hidden">
+          {Array.from({ length: maxIndex + 1 }, (_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentIndex(i)}
+              className={`w-3 h-3 rounded-full transition-all ${
+                i === currentIndex ? 'bg-red-500 scale-125' : 'bg-gray-500'
+              }`}
+            />
           ))}
         </div>
-        
-        {/* Navigation buttons - Plus gros sur mobile */}
-        {currentIndex > 0 && (
-          <button
-            onClick={prevSlide}
-            className="absolute left-1 sm:-translate-x-4 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 rounded-full p-2 sm:p-3 transition-all z-10 shadow-lg"
-          >
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-        )}
-        
-        {currentIndex < maxIndex && (
-          <button
-            onClick={nextSlide}
-            className="absolute right-1 sm:translate-x-4 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-black/90 rounded-full p-2 sm:p-3 transition-all z-10 shadow-lg"
-          >
-            <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        )}
-
-        {/* Indicateurs de pagination pour mobile */}
-        {maxIndex > 0 && (
-          <div className="flex justify-center mt-4 space-x-1 sm:hidden">
-            {Array.from({ length: maxIndex + 1 }, (_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrentIndex(i)}
-                className={`w-2 h-2 rounded-full transition-all ${
-                  i === currentIndex ? 'bg-red-500' : 'bg-gray-500'
-                }`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    )
-  }
+      )}
+    </div>
+  )
+}
 
   if (loading) {
     return (
