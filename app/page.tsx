@@ -38,15 +38,12 @@ export default function HomePage() {
     )
   }
 
-  // ✅ NOUVEAU : Fonction pour gérer le bouton "Commencer"
   const handleGetStarted = async () => {
-    // Si pas d'email, rediriger vers inscription
     if (!email.trim()) {
       router.push('/register')
       return
     }
 
-    // Valider le format email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
       alert('Veuillez saisir une adresse e-mail valide')
@@ -56,7 +53,6 @@ export default function HomePage() {
     setLoading(true)
 
     try {
-      // Vérifier si l'email existe déjà
       const response = await fetch('/api/auth/check-email', {
         method: 'POST',
         headers: {
@@ -68,15 +64,12 @@ export default function HomePage() {
       const result = await response.json()
 
       if (result.exists) {
-        // Email existe → Connexion avec email pré-rempli
         router.push(`/login?email=${encodeURIComponent(email)}`)
       } else {
-        // Email n'existe pas → Inscription avec email pré-rempli
         router.push(`/register?email=${encodeURIComponent(email)}`)
       }
     } catch (error) {
       console.error('Erreur:', error)
-      // En cas d'erreur, rediriger vers inscription par défaut
       router.push(`/register?email=${encodeURIComponent(email)}`)
     } finally {
       setLoading(false)
@@ -85,7 +78,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen text-white relative overflow-hidden">
-      {/* Image d'arrière-plan */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
@@ -93,10 +85,8 @@ export default function HomePage() {
         }}
       ></div>
       
-      {/* Overlay sombre pour la lisibilité */}
       <div className="absolute inset-0 bg-black/60"></div>
       
-      {/* Header */}
       <header className="relative z-10 flex justify-between items-center p-4 sm:p-6 bg-black/30 backdrop-blur-sm">
         <div className="flex items-center">
           <h1 className="text-3xl sm:text-4xl font-bold text-red-600 tracking-wider">
@@ -109,13 +99,12 @@ export default function HomePage() {
         </div>
         <Link 
           href="/login" 
-          className="bg-red-600 hover:bg-red-700 px-4 sm:px-6 py-2 rounded font-semibold transition-colors text-sm sm:text-base"
+          className="bg-red-600 hover:bg-red-700 px-3 sm:px-6 py-1.5 sm:py-2 rounded font-semibold transition-colors text-sm sm:text-base"
         >
           Se connecter
         </Link>
       </header>
 
-      {/* Hero Section */}
       <section className="relative z-10 text-center py-12 sm:py-20 px-4 sm:px-6">
         <h2 className="text-3xl sm:text-5xl md:text-6xl font-bold mb-4 sm:mb-6">
           Films et séries en illimité,<br />et bien plus
@@ -156,12 +145,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Tendances actuelles */}
       <section className="relative z-10 py-12 sm:py-16 px-4 sm:px-6">
         <h3 className="text-2xl sm:text-3xl font-bold mb-6 sm:mb-8 text-center">Tendances actuelles</h3>
         
         <div className="max-w-7xl mx-auto relative">
-          {/* Bouton Précédent */}
           <button
             onClick={prevSlide}
             className="absolute left-0 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-red-600 hover:bg-red-700 text-white p-2 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110"
@@ -172,7 +159,6 @@ export default function HomePage() {
             </svg>
           </button>
 
-          {/* Bouton Suivant */}
           <button
             onClick={nextSlide}
             className="absolute right-0 sm:right-4 top-1/2 -translate-y-1/2 z-20 bg-red-600 hover:bg-red-700 text-white p-2 sm:p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110"
@@ -183,7 +169,6 @@ export default function HomePage() {
             </svg>
           </button>
 
-          {/* Carrousel des films */}
           <div className="overflow-hidden mx-8 sm:mx-12">
             <div 
               className="flex transition-transform duration-500 ease-in-out gap-2 sm:gap-4"
@@ -196,30 +181,25 @@ export default function HomePage() {
                   {trendingMovies.slice(pageIndex * itemsPerPage, (pageIndex + 1) * itemsPerPage).map((movie) => (
                     <div key={movie.id} className="flex-1 relative group cursor-pointer">
                       <div className="relative bg-gray-800 aspect-[3/4] rounded-lg overflow-hidden hover:scale-105 transition-transform duration-300">
-                        {/* Image de l'affiche */}
                         <img 
                           src={movie.poster} 
                           alt={movie.title}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            // Image de fallback si l'affiche n'existe pas
                             e.currentTarget.style.display = 'none';
                             if (e.currentTarget.nextElementSibling) {
                               (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
                             }
                           }}
                         />
-                        {/* Fallback avec numéro si pas d'image */}
                         <div className="w-full h-full bg-gray-800 flex items-center justify-center" style={{display: 'none'}}>
                           <span className="text-4xl sm:text-6xl font-bold text-red-600">{movie.rank}</span>
                         </div>
                         
-                        {/* Overlay avec le rang */}
                         <div className="absolute top-1 sm:top-2 left-1 sm:left-2 bg-red-600 text-white text-base sm:text-xl font-bold w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center">
                           {movie.rank}
                         </div>
                         
-                        {/* Overlay hover */}
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                           <div className="text-center">
                             <div className="bg-white/20 backdrop-blur-sm rounded-full p-2 sm:p-3 mb-2">
@@ -239,7 +219,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Indicateurs de page */}
           <div className="flex justify-center mt-4 sm:mt-6 space-x-2">
             {Array.from({ length: totalPages }).map((_, index) => (
               <button
@@ -255,7 +234,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Avantages */}
       <section className="relative z-10 py-12 sm:py-16 px-4 sm:px-6 bg-black/40 backdrop-blur-sm">
         <h3 className="text-2xl sm:text-3xl font-bold mb-8 sm:mb-12 text-center">
           Encore plus de raisons de vous abonner
@@ -312,7 +290,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="relative z-10 bg-black/60 backdrop-blur-sm py-8 sm:py-12 px-4 sm:px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8">
