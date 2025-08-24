@@ -56,11 +56,11 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt"
   },
-  
+    
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       console.log('🔑 JWT Callback - Trigger:', trigger)
-      
+            
       // Lors du login initial
       if (user) {
         token.id = user.id
@@ -68,36 +68,49 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role
         console.log('👤 Login initial - preferencesCompleted:', token.preferencesCompleted)
       }
-      
+            
       // CRITIQUE: Mise à jour de la session
       if (trigger === "update") {
         console.log('🔄 Session update détectée!')
-        
+        console.log('🔍 Token ID type:', typeof token.id, 'Valeur:', token.id)
+                
         try {
+          // CORRECTION: Convertir l'ID en nombre entier
+          const userId = parseInt(token.id as string, 10)
+          
+          if (isNaN(userId)) {
+            console.error('❌ ID utilisateur invalide:', token.id)
+            return token
+          }
+          
+          console.log('🔍 Requête Prisma avec ID:', userId, 'type:', typeof userId)
+          
           // Récupérer les données à jour depuis la DB
           const dbUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { 
-              preferencesCompleted: true,
+            where: { id: userId }, // Maintenant c'est un entier
+            select: {
+               preferencesCompleted: true,
               role: true,
               name: true 
             }
           })
-          
+                    
           if (dbUser) {
             // Mettre à jour le token avec les nouvelles données
             token.preferencesCompleted = dbUser.preferencesCompleted
             token.role = dbUser.role
             console.log('✅ Token mis à jour - preferencesCompleted:', token.preferencesCompleted)
+          } else {
+            console.error('❌ Utilisateur non trouvé avec ID:', userId)
           }
         } catch (error) {
           console.error('❌ Erreur lors de la mise à jour du token:', error)
         }
       }
-      
+            
       return token
     },
-    
+        
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
