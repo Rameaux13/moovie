@@ -58,19 +58,51 @@ export const authOptions: NextAuthOptions = {
   },
   
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
+      console.log('🔑 JWT Callback - Trigger:', trigger)
+      
+      // Lors du login initial
       if (user) {
         token.id = user.id
         token.preferencesCompleted = user.preferencesCompleted
-        token.role = user.role // ← AJOUTER CETTE LIGNE
+        token.role = user.role
+        console.log('👤 Login initial - preferencesCompleted:', token.preferencesCompleted)
       }
+      
+      // CRITIQUE: Mise à jour de la session
+      if (trigger === "update") {
+        console.log('🔄 Session update détectée!')
+        
+        try {
+          // Récupérer les données à jour depuis la DB
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id as string },
+            select: { 
+              preferencesCompleted: true,
+              role: true,
+              name: true 
+            }
+          })
+          
+          if (dbUser) {
+            // Mettre à jour le token avec les nouvelles données
+            token.preferencesCompleted = dbUser.preferencesCompleted
+            token.role = dbUser.role
+            console.log('✅ Token mis à jour - preferencesCompleted:', token.preferencesCompleted)
+          }
+        } catch (error) {
+          console.error('❌ Erreur lors de la mise à jour du token:', error)
+        }
+      }
+      
       return token
     },
+    
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string
         session.user.preferencesCompleted = token.preferencesCompleted as boolean
-        session.user.role = token.role as string // ← AJOUTER CETTE LIGNE
+        session.user.role = token.role as string
       }
       return session
     },
