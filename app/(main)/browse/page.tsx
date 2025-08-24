@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Metadata } from 'next'
 
 // Types pour les données
 interface Genre {
@@ -573,7 +572,7 @@ function MovieCarousel({
                 </button>
               )}
               {!isUserLoggedIn && (
-                <div className="absolute top-1 sm:top-2 left-1/2 transform -translate-x-1/2">
+                <div className="absolute top-1 sm:top-2 left-transform -translate-x-1/2">
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -595,10 +594,10 @@ function MovieCarousel({
       {currentIndex > 0 && (
         <button
           onClick={prevSlide}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-red-600 text-white p-4 rounded-full shadow-lg hover:bg-red-700 transition-all duration-200"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-20 bg-black/80 hover:bg-black/90 rounded-full p-3 sm:p-4 transition-all shadow-lg"
           aria-label="Previous movie"
         >
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
@@ -606,24 +605,24 @@ function MovieCarousel({
       {currentIndex < maxIndex && (
         <button
           onClick={nextSlide}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-red-600 text-white p-4 rounded-full shadow-lg hover:bg-red-700 transition-all duration-200"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-20 bg-black/80 hover:bg-black/90 rounded-full p-3 sm:p-4 transition-all shadow-lg"
           aria-label="Next movie"
         >
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
       )}
       {movies.length > moviesPerPage && (
-        <div className="flex justify-center mt-4 gap-2 sm:gap-3">
+        <div className="flex justify-center mt-4 space-x-2 sm:hidden">
           {Array.from({ length: Math.ceil(movies.length / moviesPerPage) }).map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentIndex(index * moviesPerPage)}
-              className={`w-3 h-3 rounded-full transition-all duration-200 ${
+              className={`w-3 h-3 rounded-full transition-all ${
                 Math.floor(currentIndex / moviesPerPage) === index 
-                  ? 'bg-red-600 scale-125' 
-                  : 'bg-gray-600 hover:bg-gray-500'
+                  ? 'bg-red-500 scale-125' 
+                  : 'bg-gray-500 hover:bg-gray-400'
               }`}
             />
           ))}
