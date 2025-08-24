@@ -21,7 +21,7 @@ interface Movie {
   release_date: string
   thumbnail_url: string
   rating: number
-  views: number  // ← CORRIGÉ : "views" au lieu de "views_count"
+  views: number
 }
 
 interface BrowseData {
@@ -38,7 +38,7 @@ export default function BrowsePage() {
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [sortBy, setSortBy] = useState<string>('recent')
-  const [userFavorites, setUserFavorites] = useState<number[]>([]) // IDs des films en favoris
+  const [userFavorites, setUserFavorites] = useState<number[]>([])
 
   // Charger les données depuis l'API
   useEffect(() => {
@@ -46,7 +46,6 @@ export default function BrowsePage() {
       try {
         setLoading(true)
         
-        // Charger les films
         const response = await fetch('/api/browse')
         const result = await response.json()
         
@@ -56,7 +55,6 @@ export default function BrowsePage() {
           setError('Erreur lors du chargement des films')
         }
         
-        // Charger les favoris de l'utilisateur si connecté
         if (session?.user) {
           try {
             const favResponse = await fetch('/api/favorites')
@@ -86,7 +84,6 @@ export default function BrowsePage() {
   const getFilteredMovies = (movies: Movie[]) => {
     let filtered = movies
 
-    // Recherche par titre
     if (searchQuery) {
       filtered = filtered.filter(movie => 
         movie.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -94,13 +91,12 @@ export default function BrowsePage() {
       )
     }
 
-    // Tri
     switch (sortBy) {
       case 'recent':
         filtered = [...filtered].sort((a, b) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime())
         break
       case 'popular':
-        filtered = [...filtered].sort((a, b) => (b.views || 0) - (a.views || 0))  // ← CORRIGÉ : "views" avec protection
+        filtered = [...filtered].sort((a, b) => (b.views || 0) - (a.views || 0))
         break
       case 'rating':
         filtered = [...filtered].sort((a, b) => (b.rating || 0) - (a.rating || 0))
@@ -135,10 +131,8 @@ export default function BrowsePage() {
       
       if (result.success) {
         if (isFavorite) {
-          // Supprimer de la liste locale
           setUserFavorites(userFavorites.filter(id => id !== movieId))
         } else {
-          // Ajouter à la liste locale
           setUserFavorites([...userFavorites, movieId])
         }
       } else {
@@ -154,18 +148,15 @@ export default function BrowsePage() {
     setSelectedGenre(genre)
     
     if (genre === 'Tous les genres') {
-      // Recharger toutes les données
       const response = await fetch('/api/browse')
       const result = await response.json()
       if (result.success) {
         setData(result)
       }
     } else {
-      // Filtrer par genre spécifique
       const response = await fetch(`/api/browse?genre=${encodeURIComponent(genre)}`)
       const result = await response.json()
       if (result.success) {
-        // Adapter les données pour l'affichage filtré
         setData({
           moviesByGenre: [{
             id: 'filtered',
@@ -210,42 +201,31 @@ export default function BrowsePage() {
 
   return (
     <div className="min-h-screen bg-black">
-      {/* Hero Section - Banner principal */}
       <div className="relative h-[70vh] overflow-hidden">
-        {/* Image de fond */}
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{
             backgroundImage: `url('https://image.tmdb.org/t/p/original/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg')`,
           }}
         >
-          {/* Overlay gradient */}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/30"></div>
         </div>
 
-        {/* Contenu Hero */}
         <div className="relative z-10 flex items-center h-full px-8 max-w-7xl mx-auto">
           <div className="max-w-2xl">
-            {/* Badge Netflix Original */}
             <div className="inline-flex items-center gap-2 mb-4">
               <span className="bg-red-600 text-white px-3 py-1 text-sm font-bold uppercase tracking-wide">
                 Film Original NETFLIX
               </span>
             </div>
-
-            {/* Titre */}
             <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 leading-tight">
               Catalogue
             </h1>
-
-            {/* Description */}
             <p className="text-xl text-gray-200 mb-8 leading-relaxed max-w-xl">
               Découvrez notre collection complète de films et séries. 
               Des blockbusters aux films d'auteur, trouvez votre prochaine obsession.
             </p>
-
-            {/* Statistiques */}
             {data && (
               <div className="flex gap-6 mb-8">
                 <div className="text-center">
@@ -262,12 +242,9 @@ export default function BrowsePage() {
                 </div>
               </div>
             )}
-
-            {/* Boutons d'action */}
             <div className="flex flex-wrap gap-4">
               <button 
                 onClick={() => {
-                  // Scroll vers le catalogue
                   const catalogueSection = document.querySelector('#catalogue-section')
                   catalogueSection?.scrollIntoView({ behavior: 'smooth' })
                 }}
@@ -280,7 +257,6 @@ export default function BrowsePage() {
               </button>
               <button 
                 onClick={() => {
-                  // Action pour plus d'infos
                   alert('Fonctionnalité "Plus d\'infos" - À développer dans la prochaine étape!')
                 }}
                 className="flex items-center gap-3 bg-gray-600/70 text-white font-semibold px-8 py-3 rounded-md hover:bg-gray-600 transition-colors duration-200 backdrop-blur-sm"
@@ -295,16 +271,12 @@ export default function BrowsePage() {
         </div>
       </div>
 
-      {/* Section Filtres et Recherche */}
       <div className="relative z-20 bg-black px-8 py-6">
         <div className="max-w-7xl mx-auto space-y-6">
-          
-          {/* Barre de recherche */}
           <div className="flex flex-wrap items-center gap-4">
             <h2 className="text-2xl font-bold text-white">
               Parcourir le catalogue
             </h2>
-            
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <input
@@ -319,8 +291,6 @@ export default function BrowsePage() {
                 </svg>
               </div>
             </div>
-
-            {/* Tri */}
             <div className="flex items-center gap-2">
               <span className="text-gray-400 text-sm">Trier par:</span>
               <select
@@ -335,8 +305,6 @@ export default function BrowsePage() {
               </select>
             </div>
           </div>
-
-          {/* Filtres genres */}
           <div className="flex flex-wrap items-center gap-4">
             <span className="text-gray-400 text-sm font-medium">Genres:</span>
             <div className="flex flex-wrap gap-3">
@@ -355,8 +323,6 @@ export default function BrowsePage() {
               ))}
             </div>
           </div>
-
-          {/* Résultats de recherche */}
           {searchQuery && (
             <div className="text-gray-400 text-sm">
               Recherche: "<span className="text-white">{searchQuery}</span>"
@@ -368,11 +334,8 @@ export default function BrowsePage() {
         </div>
       </div>
 
-      {/* Section Catalogue */}
       <div id="catalogue-section" className="px-4 sm:px-8 py-12">
         <div className="max-w-7xl mx-auto space-y-12">
-          
-          {/* Section Nouveautés */}
           {selectedGenre === 'Tous les genres' && data?.recentMovies && data.recentMovies.length > 0 && !searchQuery && (
             <section>
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
@@ -387,8 +350,6 @@ export default function BrowsePage() {
               />
             </section>
           )}
-
-          {/* Section Populaires */}
           {selectedGenre === 'Tous les genres' && data?.popularMovies && data.popularMovies.length > 0 && !searchQuery && (
             <section>
               <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
@@ -403,8 +364,6 @@ export default function BrowsePage() {
               />
             </section>
           )}
-
-          {/* Sections par genre */}
           {data?.moviesByGenre.map((genre) => {
             const filteredMovies = getFilteredMovies(genre.movies)
             return filteredMovies.length > 0 && (
@@ -430,8 +389,6 @@ export default function BrowsePage() {
               </section>
             )
           })}
-
-          {/* Message si aucun résultat */}
           {data && data.moviesByGenre.every(genre => getFilteredMovies(genre.movies).length === 0) && (
             <div className="text-center py-16">
               <div className="text-6xl mb-4">🔍</div>
@@ -464,7 +421,6 @@ export default function BrowsePage() {
   )
 }
 
-// Types pour les composants
 interface MovieCarouselProps {
   movies: Movie[]
   userFavorites?: number[]
@@ -472,7 +428,6 @@ interface MovieCarouselProps {
   isUserLoggedIn?: boolean
 }
 
-// Composant Carrousel de films réutilisable
 function MovieCarousel({ 
   movies, 
   userFavorites = [], 
@@ -480,15 +435,14 @@ function MovieCarousel({
   isUserLoggedIn = false 
 }: MovieCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [moviesPerPage, setMoviesPerPage] = useState(5)
+  const [moviesPerPage, setMoviesPerPage] = useState(1)
 
-  // Responsive: ajuster le nombre de films par page
   useEffect(() => {
     const updateMoviesPerPage = () => {
-      if (window.innerWidth < 640) setMoviesPerPage(2)      // Mobile
-      else if (window.innerWidth < 768) setMoviesPerPage(3) // Tablette
-      else if (window.innerWidth < 1024) setMoviesPerPage(4) // Desktop small
-      else setMoviesPerPage(5) // Desktop large
+      if (window.innerWidth < 640) setMoviesPerPage(1)      // Mobile: 1 movie
+      else if (window.innerWidth < 768) setMoviesPerPage(3) // Tablet: 3 movies
+      else if (window.innerWidth < 1024) setMoviesPerPage(4) // Desktop small: 4 movies
+      else setMoviesPerPage(5) // Desktop large: 5 movies
     }
 
     updateMoviesPerPage()
@@ -496,24 +450,40 @@ function MovieCarousel({
     return () => window.removeEventListener('resize', updateMoviesPerPage)
   }, [])
 
+  const maxIndex = Math.max(0, movies.length - moviesPerPage)
+
   const nextSlide = () => {
-    if (currentIndex < movies.length - moviesPerPage) {
-      setCurrentIndex(currentIndex + moviesPerPage)
-    }
+    setCurrentIndex(Math.min(currentIndex + 1, maxIndex))
   }
 
   const prevSlide = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(Math.max(0, currentIndex - moviesPerPage))
-    }
+    setCurrentIndex(Math.max(currentIndex - 1, 0))
+  }
+
+  // Swipe support
+  const [touchStart, setTouchStart] = useState(0)
+  const [touchEnd, setTouchEnd] = useState(0)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return
+    const distance = touchStart - touchEnd
+    const isLeftSwipe = distance > 50
+    const isRightSwipe = distance < -50
+    if (isLeftSwipe) nextSlide()
+    if (isRightSwipe) prevSlide()
   }
 
   const goToMovie = (movieId: number) => {
-    // Navigation vers la page de lecture du film
-    window.location.href = `/watch/${movieId}?from=browse`  // ← CORRIGÉ : Navigation réelle au lieu d'alert
+    window.location.href = `/watch/${movieId}?from=browse`
   }
-
-  const visibleMovies = movies.slice(currentIndex, currentIndex + moviesPerPage)
 
   if (movies.length === 0) {
     return (
@@ -524,148 +494,135 @@ function MovieCarousel({
   }
 
   return (
-    <div className="relative group">
-      {/* Bouton Précédent */}
+    <div className="relative group overflow-hidden">
+      <div 
+        className="flex transition-transform duration-300 ease-in-out snap-x snap-mandatory touch-pan-x"
+        style={{ transform: `translateX(-${currentIndex * (100 / moviesPerPage)}%)` }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {movies.map((movie) => (
+          <div
+            key={movie.id}
+            className="flex-none w-full sm:w-1/3 md:w-1/4 lg:w-1/5 snap-center px-2 sm:px-3"
+            onClick={() => goToMovie(movie.id)}
+          >
+            <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-gray-800 group/card cursor-pointer">
+              <img
+                src={movie.thumbnail_url}
+                alt={movie.title}
+                className="w-full h-[200px] sm:h-[300px] object-cover transition-transform duration-300 group-hover/card:scale-110"
+                loading="lazy"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement
+                  target.src = 'https://via.placeholder.com/300x450/1f2937/ffffff?text=Image+non+disponible'
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
+                <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4">
+                  <h4 className="text-white font-semibold text-xs sm:text-sm mb-1 line-clamp-2">
+                    {movie.title}
+                  </h4>
+                  <div className="flex items-center gap-1 sm:gap-2 text-xs text-gray-300">
+                    <span>{new Date(movie.release_date).getFullYear()}</span>
+                    <span>•</span>
+                    <span>{Math.floor(movie.duration / 60)}h {movie.duration % 60}m</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span className="hidden sm:flex items-center gap-1">
+                      ⭐ {(movie.rating || 0).toFixed(1)}
+                    </span>
+                  </div>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      goToMovie(movie.id)
+                    }}
+                    className="bg-white/20 backdrop-blur-sm text-white p-2 sm:p-3 rounded-full hover:bg-red-600 transition-colors duration-200"
+                  >
+                    <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-black/70 text-white px-1 sm:px-2 py-1 rounded text-xs font-bold">
+                {(movie.rating || 0).toFixed(1)} ⭐
+              </div>
+              <div className="absolute top-1 sm:top-2 left-1 sm:left-2 bg-red-600/80 text-white px-1 sm:px-2 py-1 rounded text-xs font-bold">
+                {(movie.views || 0).toLocaleString()} vues
+              </div>
+              {isUserLoggedIn && onToggleFavorite && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onToggleFavorite(movie.id)
+                  }}
+                  className={`absolute top-1 sm:top-2 left-1/2 transform -translate-x-1/2 p-1 sm:p-2 rounded-full transition-all duration-200 ${
+                    userFavorites.includes(movie.id)
+                      ? 'bg-red-600 text-white shadow-lg'
+                      : 'bg-white/20 backdrop-blur-sm text-white hover:bg-red-600'
+                  }`}
+                  title={userFavorites.includes(movie.id) ? 'Supprimer de ma liste' : 'Ajouter à ma liste'}
+                >
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                  </svg>
+                </button>
+              )}
+              {!isUserLoggedIn && (
+                <div className="absolute top-1 sm:top-2 left-1/2 transform -translate-x-1/2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      alert('Connectez-vous pour ajouter des films à votre liste !')
+                    }}
+                    className="bg-white/20 backdrop-blur-sm text-white p-1 sm:p-2 rounded-full hover:bg-gray-600 transition-colors"
+                    title="Connectez-vous pour ajouter à vos favoris"
+                  >
+                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
       {currentIndex > 0 && (
         <button
           onClick={prevSlide}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 -ml-4"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-black/80 text-white p-3 rounded-full hover:bg-red-600 transition-all duration-200"
+          aria-label="Previous movie"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
       )}
-
-      {/* Carrousel de films */}
-      <div className="overflow-hidden">
-        <div className="flex gap-2 sm:gap-4 transition-transform duration-300">
-          {visibleMovies.map((movie) => (
-            <div
-              key={movie.id}
-              className="flex-shrink-0 group/card cursor-pointer"
-              style={{ width: `${100 / moviesPerPage}%` }}
-              onClick={() => goToMovie(movie.id)}
-            >
-              <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-gray-800">
-                <img
-                  src={movie.thumbnail_url}
-                  alt={movie.title}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-110"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement
-                    target.src = 'https://via.placeholder.com/300x450/1f2937/ffffff?text=Image+non+disponible'
-                  }}
-                />
-                
-                {/* Overlay avec informations */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
-                  <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4">
-                    <h4 className="text-white font-semibold text-xs sm:text-sm mb-1 line-clamp-2">
-                      {movie.title}
-                    </h4>
-                    <div className="flex items-center gap-1 sm:gap-2 text-xs text-gray-300">
-                      <span>{new Date(movie.release_date).getFullYear()}</span>
-                      <span>•</span>
-                      <span>{Math.floor(movie.duration / 60)}h {movie.duration % 60}m</span>
-                      <span className="hidden sm:inline">•</span>
-                      <span className="hidden sm:flex items-center gap-1">
-                        ⭐ {(movie.rating || 0).toFixed(1)}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  {/* Bouton Play au centre */}
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        goToMovie(movie.id)
-                      }}
-                      className="bg-white/20 backdrop-blur-sm text-white p-2 sm:p-3 rounded-full hover:bg-red-600 transition-colors duration-200"
-                    >
-                      <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z"/>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Badge rating */}
-                <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-black/70 text-white px-1 sm:px-2 py-1 rounded text-xs font-bold">
-                  {(movie.rating || 0).toFixed(1)} ⭐
-                </div>
-
-                {/* Badge views */}
-                <div className="absolute top-1 sm:top-2 left-1 sm:left-2 bg-red-600/80 text-white px-1 sm:px-2 py-1 rounded text-xs font-bold">
-                  {(movie.views || 0).toLocaleString()} vues  {/* ← CORRIGÉ : "views" avec protection */}
-                </div>
-
-                {/* Bouton Favoris */}
-                {isUserLoggedIn && onToggleFavorite && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onToggleFavorite(movie.id)
-                    }}
-                    className={`absolute top-1 sm:top-2 left-1/2 transform -translate-x-1/2 p-1 sm:p-2 rounded-full transition-all duration-200 ${
-                      userFavorites.includes(movie.id)
-                        ? 'bg-red-600 text-white shadow-lg'
-                        : 'bg-white/20 backdrop-blur-sm text-white hover:bg-red-600'
-                    }`}
-                    title={userFavorites.includes(movie.id) ? 'Supprimer de ma liste' : 'Ajouter à ma liste'}
-                  >
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                    </svg>
-                  </button>
-                )}
-
-                {/* Message pour utilisateurs non connectés */}
-                {!isUserLoggedIn && (
-                  <div className="absolute top-1 sm:top-2 left-1/2 transform -translate-x-1/2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        alert('Connectez-vous pour ajouter des films à votre liste !')
-                      }}
-                      className="bg-white/20 backdrop-blur-sm text-white p-1 sm:p-2 rounded-full hover:bg-gray-600 transition-colors"
-                      title="Connectez-vous pour ajouter à vos favoris"
-                    >
-                      <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                      </svg>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Bouton Suivant */}
-      {currentIndex < movies.length - moviesPerPage && (
+      {currentIndex < maxIndex && (
         <button
           onClick={nextSlide}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 -mr-4"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-black/80 text-white p-3 rounded-full hover:bg-red-600 transition-all duration-200"
+          aria-label="Next movie"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </button>
       )}
-
-      {/* Indicateurs de pagination */}
       {movies.length > moviesPerPage && (
-        <div className="flex justify-center mt-4 gap-2">
+        <div className="flex justify-center mt-4 gap-2 sm:gap-3">
           {Array.from({ length: Math.ceil(movies.length / moviesPerPage) }).map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentIndex(index * moviesPerPage)}
-              className={`w-2 h-2 rounded-full transition-colors ${
+              className={`w-3 h-3 rounded-full transition-all duration-200 ${
                 Math.floor(currentIndex / moviesPerPage) === index 
-                  ? 'bg-red-600' 
+                  ? 'bg-red-600 scale-125' 
                   : 'bg-gray-600 hover:bg-gray-500'
               }`}
             />
