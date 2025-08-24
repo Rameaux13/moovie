@@ -73,7 +73,7 @@ export default function PreferencesPage() {
       
       // Redirection immédiate sans attendre la session
       console.log('🏠 Redirection immédiate vers /home...')
-      router.replace('/home') // replace au lieu de push pour éviter le back
+      window.location.replace('/home')// replace au lieu de push pour éviter le back
       
       // Optionnel: forcer un hard reload de la page
       // window.location.replace('/home')
