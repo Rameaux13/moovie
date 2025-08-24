@@ -452,79 +452,86 @@ function MovieCarousel({
               <img
                 src={movie.thumbnail_url}
                 alt={movie.title}
-                className="w-full h-[200px] sm:h-[300px] object-cover transition-transform duration-300 group-hover/card:scale-110"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-110"
                 loading="lazy"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement
                   target.src = 'https://via.placeholder.com/300x450/1f2937/ffffff?text=Image+non+disponible'
                 }}
               />
-              <div
-                className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent transition-opacity duration-300 pointer-events-none ${
-                  touchedId === movie.id ? 'opacity-100' : 'opacity-0 sm:group-hover/card:opacity-100'
-                }`}
-                aria-hidden="true"
-              >
-                <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4">
-          <div className="absolute top-1 sm:top-2 left-1 sm:left-2 bg-red-600/80 text-white px-1 sm:px-2 py-1 rounded text-xs font-bold">
+              
+              {/* Badge de note en haut à droite */}
+              <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs font-bold">
+                {(movie.rating || 0).toFixed(1)} ⭐
+              </div>
+
+              {/* Badge de vues en haut à gauche */}
+              <div className="absolute top-2 left-2 bg-red-600/80 text-white px-2 py-1 rounded text-xs font-bold">
                 {(movie.views || 0).toLocaleString()} vues
               </div>
+
+              {/* Bouton favoris */}
               {isUserLoggedIn && onToggleFavorite && (
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
                     onToggleFavorite(movie.id)
                   }}
-                  className={`absolute top-1 sm:top-2 left-1/2 transform -translate-x-1/2 p-1 sm:p-2 rounded-full transition-all duration-200 ${
+                  className={`absolute top-2 left-1/2 transform -translate-x-1/2 p-2 rounded-full transition-all duration-200 ${
                     userFavorites.includes(movie.id)
                       ? 'bg-red-600 text-white shadow-lg'
                       : 'bg-white/20 backdrop-blur-sm text-white hover:bg-red-600'
                   }`}
                   title={userFavorites.includes(movie.id) ? 'Supprimer de ma liste' : 'Ajouter à ma liste'}
                 >
-                  <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
                   </svg>
                 </button>
               )}
-            </div>
-          </div>             <h4 className="text-white font-semibold text-xs sm:text-sm mb-1 line-clamp-2">
+
+              {/* Overlay avec informations (visible au hover/touch) */}
+              <div
+                className={`absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent transition-opacity duration-300 pointer-events-none ${
+                  touchedId === movie.id ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100'
+                }`}
+              >
+                <div className="absolute bottom-0 left-0 right-0 p-3">
+                  <h4 className="text-white font-semibold text-sm mb-2 line-clamp-2">
                     {movie.title}
                   </h4>
-                  <div className="flex items-center gap-1 sm:gap-2 text-xs text-gray-300">
+                  <div className="flex items-center gap-2 text-xs text-gray-300 mb-3">
                     <span>{new Date(movie.release_date).getFullYear()}</span>
                     <span>•</span>
                     <span>{Math.floor(movie.duration / 60)}h {movie.duration % 60}m</span>
-                    <span className="hidden sm:inline">•</span>
-                    <span className="hidden sm:flex items-center gap-1">
-                      ⭐ {(movie.rating || 0).toFixed(1)}
-                    </span>
                   </div>
                 </div>
-                <div
-                  className={`absolute inset-0 flex items-center justify-center pointer-events-none ${
-                    touchedId === movie.id ? 'opacity-100' : 'opacity-0 sm:group-hover/card:opacity-100'
-                  }`}
+              </div>
+
+              {/* Bouton play au centre */}
+              <div
+                className={`absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${
+                  touchedId === movie.id ? 'opacity-100' : 'opacity-0 group-hover/card:opacity-100'
+                }`}
+              >
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    goToMovie(movie.id)
+                  }}
+                  className="bg-white/20 backdrop-blur-sm text-white p-3 rounded-full hover:bg-red-600 transition-colors duration-200 pointer-events-auto"
                 >
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      goToMovie(movie.id)
-                    }}
-                    className="bg-white/20 backdrop-blur-sm text-white p-2 sm:p-3 rounded-full hover:bg-red-600 transition-colors duration-200 pointer-events-auto"
-                  >
-                    <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                  </button>
-                </div>
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                  </svg>
+                </button>
               </div>
-              <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-black/70 text-white px-1 sm:px-2 py-1 rounded text-xs font-bold">
-                {(movie.rating || 0).toFixed(1)} ⭐
-              </div>
-         
+            </div>
+          </div>
         ))}
       </div>
+
+      {/* Boutons de navigation */}
       {currentIndex > 0 && (
         <button
           onClick={prevSlide}
@@ -547,6 +554,8 @@ function MovieCarousel({
           </svg>
         </button>
       )}
+
+      {/* Indicateurs de pagination (mobile uniquement) */}
       {movies.length > moviesPerPage && (
         <div className="flex justify-center mt-4 space-x-2 sm:hidden">
           {Array.from({ length: Math.ceil(movies.length / moviesPerPage) }).map((_, index) => (
