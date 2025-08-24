@@ -44,21 +44,17 @@ export default function BrowsePage() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        
         const response = await fetch('/api/browse')
         const result = await response.json()
-        
         if (result.success) {
           setData(result)
         } else {
           setError('Erreur lors du chargement des films')
         }
-        
         if (session?.user) {
           try {
             const favResponse = await fetch('/api/favorites')
             const favResult = await favResponse.json()
-            
             if (favResult.success) {
               const favoriteIds = favResult.favorites.map((fav: any) => fav.id)
               setUserFavorites(favoriteIds)
@@ -67,7 +63,6 @@ export default function BrowsePage() {
             console.log('Erreur favoris (non critique):', favError)
           }
         }
-        
       } catch (err) {
         setError('Erreur de connexion')
         console.error('Erreur:', err)
@@ -75,21 +70,18 @@ export default function BrowsePage() {
         setLoading(false)
       }
     }
-
     fetchData()
   }, [session])
 
   // Filtrer les films selon les critères
   const getFilteredMovies = (movies: Movie[]) => {
     let filtered = movies
-
     if (searchQuery) {
       filtered = filtered.filter(movie => 
         movie.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         movie.description.toLowerCase().includes(searchQuery.toLowerCase())
       )
     }
-
     switch (sortBy) {
       case 'recent':
         filtered = [...filtered].sort((a, b) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime())
@@ -104,7 +96,6 @@ export default function BrowsePage() {
         filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title))
         break
     }
-
     return filtered
   }
 
@@ -114,20 +105,14 @@ export default function BrowsePage() {
       alert('Vous devez être connecté pour ajouter des favoris')
       return
     }
-
     const isFavorite = userFavorites.includes(movieId)
-    
     try {
       const response = await fetch('/api/favorites', {
         method: isFavorite ? 'DELETE' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ movieId }),
       })
-
       const result = await response.json()
-      
       if (result.success) {
         if (isFavorite) {
           setUserFavorites(userFavorites.filter(id => id !== movieId))
@@ -142,16 +127,13 @@ export default function BrowsePage() {
       alert('Erreur de connexion')
     }
   }
-  
+
   const handleGenreFilter = async (genre: string) => {
     setSelectedGenre(genre)
-    
     if (genre === 'Tous les genres') {
       const response = await fetch('/api/browse')
       const result = await response.json()
-      if (result.success) {
-        setData(result)
-      }
+      if (result.success) setData(result)
     } else {
       const response = await fetch(`/api/browse?genre=${encodeURIComponent(genre)}`)
       const result = await response.json()
@@ -200,18 +182,14 @@ export default function BrowsePage() {
 
   return (
     <div className="min-h-screen bg-black">
-      {/* ✅ Hero Section - BOUTONS SUPPRIMÉS */}
       <div className="relative h-[50vh] sm:h-[70vh] overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url('https://image.tmdb.org/t/p/original/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg')`,
-          }}
+          style={{ backgroundImage: `url('https://image.tmdb.org/t/p/original/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg')` }}
         >
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/30"></div>
         </div>
-
         <div className="relative z-10 flex items-center h-full px-4 sm:px-8 max-w-7xl mx-auto">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 mb-4">
@@ -242,12 +220,9 @@ export default function BrowsePage() {
                 </div>
               </div>
             )}
-            {/* ✅ BOUTONS SUPPRIMÉS - Plus de boutons "Parcourir tout" et "Plus d'infos" */}
           </div>
         </div>
       </div>
-
-      {/* Section Filtres et Recherche */}
       <div className="relative z-20 bg-black px-4 sm:px-8 py-6">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-wrap items-center gap-4">
@@ -310,8 +285,6 @@ export default function BrowsePage() {
           )}
         </div>
       </div>
-
-      {/* Section Catalogue */}
       <div id="catalogue-section" className="px-4 sm:px-8 py-8 sm:py-12">
         <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
           {selectedGenre === 'Tous les genres' && data?.recentMovies && data.recentMovies.length > 0 && !searchQuery && (
@@ -406,7 +379,6 @@ interface MovieCarouselProps {
   isUserLoggedIn?: boolean
 }
 
-// ✅ CARROUSEL AVEC BOUTONS VISIBLES SUR MOBILE
 function MovieCarousel({ 
   movies, 
   userFavorites = [], 
@@ -423,34 +395,20 @@ function MovieCarousel({
       else if (window.innerWidth < 1024) setMoviesPerPage(4) // Desktop small: 4 films
       else setMoviesPerPage(5) // Desktop large: 5 films
     }
-
     updateMoviesPerPage()
     window.addEventListener('resize', updateMoviesPerPage)
     return () => window.removeEventListener('resize', updateMoviesPerPage)
   }, [])
 
   const maxIndex = Math.max(0, movies.length - moviesPerPage)
+  const nextSlide = () => setCurrentIndex(Math.min(currentIndex + 1, maxIndex))
+  const prevSlide = () => setCurrentIndex(Math.max(currentIndex - 1, 0))
 
-  const nextSlide = () => {
-    setCurrentIndex(Math.min(currentIndex + 1, maxIndex))
-  }
-
-  const prevSlide = () => {
-    setCurrentIndex(Math.max(currentIndex - 1, 0))
-  }
-
-  // Support tactile pour swipe
   const [touchStart, setTouchStart] = useState(0)
   const [touchEnd, setTouchEnd] = useState(0)
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
-
+  const handleTouchStart = (e: React.TouchEvent) => setTouchStart(e.targetTouches[0].clientX)
+  const handleTouchMove = (e: React.TouchEvent) => setTouchEnd(e.targetTouches[0].clientX)
   const handleTouchEnd = () => {
     if (!touchStart || !touchEnd) return
     const distance = touchStart - touchEnd
@@ -491,14 +449,15 @@ function MovieCarousel({
               <img
                 src={movie.thumbnail_url}
                 alt={movie.title}
-                className="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-110"
+                className="w-full h-[200px] sm:h-[300px] object-cover transition-transform duration-300 group-hover/card:scale-110"
                 loading="lazy"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement
                   target.src = 'https://via.placeholder.com/300x450/1f2937/ffffff?text=Image+non+disponible'
                 }}
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300">
+              {/* Gradient corrigé : opacity-0 par défaut, visible uniquement au hover */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-300 pointer-events-none">
                 <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4">
                   <h4 className="text-white font-semibold text-xs sm:text-sm mb-1 line-clamp-2">
                     {movie.title}
@@ -513,13 +472,13 @@ function MovieCarousel({
                     </span>
                   </div>
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <button 
                     onClick={(e) => {
                       e.stopPropagation()
                       goToMovie(movie.id)
                     }}
-                    className="bg-white/20 backdrop-blur-sm text-white p-2 sm:p-3 rounded-full hover:bg-red-600 transition-colors duration-200"
+                    className="bg-white/20 backdrop-blur-sm text-white p-2 sm:p-3 rounded-full hover:bg-red-600 transition-colors duration-200 pointer-events-auto"
                   >
                     <svg className="w-4 h-4 sm:w-6 sm:h-6" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M8 5v14l11-7z"/>
@@ -555,8 +514,6 @@ function MovieCarousel({
           </div>
         ))}
       </div>
-      
-      {/* ✅ BOUTONS CARROUSEL - TOUJOURS VISIBLES ET PLUS GROS SUR MOBILE */}
       {currentIndex > 0 && (
         <button
           onClick={prevSlide}
@@ -568,7 +525,6 @@ function MovieCarousel({
           </svg>
         </button>
       )}
-      
       {currentIndex < maxIndex && (
         <button
           onClick={nextSlide}
@@ -580,8 +536,6 @@ function MovieCarousel({
           </svg>
         </button>
       )}
-
-      {/* Indicateurs de pagination - Visible seulement sur mobile */}
       {movies.length > moviesPerPage && (
         <div className="flex justify-center mt-4 space-x-2 sm:hidden">
           {Array.from({ length: Math.ceil(movies.length / moviesPerPage) }).map((_, index) => (
