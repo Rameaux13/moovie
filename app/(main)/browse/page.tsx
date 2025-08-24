@@ -547,21 +547,6 @@ function MovieCarousel({
           </svg>
         </button>
       )}
-      {movies.length > moviesPerPage && (
-        <div className="flex justify-center mt-6 space-x-2">
-          {Array.from({ length: Math.ceil(movies.length / moviesPerPage) }).map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentIndex(index)}
-              className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all ${
-                currentIndex === index 
-                  ? 'bg-red-500 scale-125' 
-                  : 'bg-gray-500 hover:bg-gray-400'
-              }`}
-            />
-          ))}
-        </div>
-      )}
     </div>
   )
 }
