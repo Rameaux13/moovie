@@ -3,6 +3,15 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: Request) {
+
+   useEffect(() => {
+    console.log('🎬 DATA REÇUE:', data)
+    if (data?.moviesByGenre) {
+      console.log('🎭 GENRES DISPONIBLES:', data.moviesByGenre.map(g => g.name))
+      console.log('🎥 TOTAL FILMS:', data.moviesByGenre.reduce((acc, g) => acc + g.movies.length, 0))
+    }
+  }, [data])
+
   try {
     const { searchParams } = new URL(request.url)
     const genreFilter = searchParams.get('genre')
