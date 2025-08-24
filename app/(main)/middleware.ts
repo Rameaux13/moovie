@@ -12,6 +12,12 @@ export default withAuth(
 
     // Si utilisateur connecté
     if (token) {
+      // AJOUT: Permettre l'accès à la page de succès même sans préférences complétées
+      if (pathname === "/preferences/success") {
+        console.log('✅ Accès autorisé à /preferences/success')
+        return NextResponse.next()
+      }
+
       // Redirection depuis les pages d'authentification
       if (pathname === "/" || pathname === "/login" || pathname === "/register") {
         if (!token.preferencesCompleted) {
@@ -56,9 +62,9 @@ export default withAuth(
         console.log('🔐 Auth callback - Path:', pathname, 'Token exists:', !!token)
 
         // Pages publiques (accessibles sans connexion)
-      const publicPages = ["/", "/login", "/register", "/forgot-password", "/api/auth", "/preferences/success"]
+        const publicPages = ["/", "/login", "/register", "/forgot-password", "/api/auth", "/preferences/success"]
         const isPublicPage = publicPages.some(page => pathname.startsWith(page))
-        
+
         if (isPublicPage) {
           console.log('✅ Page publique autorisée')
           return true
@@ -67,7 +73,7 @@ export default withAuth(
         // Pages protégées (nécessitent une connexion)
         const protectedPages = ["/home", "/preferences", "/profile", "/watch", "/movies", "/series"]
         const isProtectedPage = protectedPages.some(page => pathname.startsWith(page))
-        
+
         if (isProtectedPage) {
           const isAuthorized = !!token
           console.log('🔐 Page protégée -', isAuthorized ? 'Autorisée' : 'Refusée')
