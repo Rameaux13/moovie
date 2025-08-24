@@ -3,32 +3,27 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: Request) {
-
-   useEffect(() => {
-    console.log('🎬 DATA REÇUE:', data)
-    if (data?.moviesByGenre) {
-      console.log('🎭 GENRES DISPONIBLES:', data.moviesByGenre.map(g => g.name))
-      console.log('🎥 TOTAL FILMS:', data.moviesByGenre.reduce((acc, g) => acc + g.movies.length, 0))
-    }
-  }, [data])
-
   try {
     const { searchParams } = new URL(request.url)
     const genreFilter = searchParams.get('genre')
 
-    // ✅ NOUVEAU : Si un genre spécifique est demandé (filtrage simple par colonne genre)
+    console.log('🎬 API Browse appelée, genre:', genreFilter) // Debug
+
+    // Si un genre spécifique est demandé
     if (genreFilter && genreFilter !== 'Tous les genres') {
       const videosByGenre = await prisma.video.findMany({
         where: {
           genre: {
             contains: genreFilter,
-            mode: 'insensitive' // Recherche insensible à la casse
+            mode: 'insensitive'
           }
         },
         orderBy: {
           created_at: 'desc'
         }
       })
+
+      console.log(`📽️ Films trouvés pour "${genreFilter}":`, videosByGenre.length) // Debug
 
       return NextResponse.json({
         success: true,
@@ -37,14 +32,17 @@ export async function GET(request: Request) {
       })
     }
 
-    // ✅ NOUVEAU : Récupérer tous les films et les organiser par genre
+    // Récupérer tous les films
     const allVideos = await prisma.video.findMany({
       orderBy: {
         created_at: 'desc'
       }
     })
 
-    // ✅ NOUVEAU : Grouper les films par genre
+    console.log('🎥 Total films en base:', allVideos.length) // Debug
+    console.log('🎭 Genres uniques:', [...new Set(allVideos.map(v => v.genre))]) // Debug
+
+    // Grouper par genre
     const genreMap = new Map<string, typeof allVideos>()
     
     allVideos.forEach(video => {
@@ -55,9 +53,8 @@ export async function GET(request: Request) {
       genreMap.get(genre)!.push(video)
     })
 
-    // ✅ NOUVEAU : Convertir en format attendu par le frontend
+    // Convertir en format attendu
     const moviesByGenre = Array.from(genreMap.entries()).map(([genreName, movies], index) => {
-      // Icônes par genre
       const genreIcons: Record<string, string> = {
         'Action': '💥',
         'Romance': '💕', 
@@ -76,26 +73,22 @@ export async function GET(request: Request) {
       return {
         id: `genre-${index}`,
         name: genreName,
-        color: '#dc2626', // Rouge Netflix
+        color: '#dc2626',
         icon: genreIcons[genreName] || '🎬',
-        movies: movies.slice(0, 12) // Limiter à 12 films par genre
+        movies: movies.slice(0, 12)
       }
     }).filter(genre => genre.movies.length > 0)
 
-    // ✅ NOUVEAU : Films récents (20 plus récents)
-    const recentMovies = allVideos
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    const recentMovies = allVideos.slice(0, 20)
+    const popularMovies = [...allVideos]
+      .sort((a, b) => (b.views || 0) - (a.views || 0))
       .slice(0, 20)
 
-    // ✅ NOUVEAU : Films populaires (triés par vues, puis par rating)
-    const popularMovies = allVideos
-      .sort((a, b) => {
-        // Trier par vues d'abord, puis par rating
-        const viewDiff = (b.views || 0) - (a.views || 0)
-        if (viewDiff !== 0) return viewDiff
-        return (b.rating || 0) - (a.rating || 0)
-      })
-      .slice(0, 20)
+    console.log('✅ Réponse API:', {
+      totalMovies: allVideos.length,
+      totalGenres: moviesByGenre.length,
+      genres: moviesByGenre.map(g => `${g.name} (${g.movies.length} films)`)
+    }) // Debug
 
     return NextResponse.json({
       success: true,
@@ -111,8 +104,7 @@ export async function GET(request: Request) {
     return NextResponse.json(
       { 
         success: false, 
-        error: 'Erreur lors de la récupération des films',
-        details: error instanceof Error ? error.message : 'Erreur inconnue'
+        error: 'Erreur lors de la récupération des films'
       },
       { status: 500 }
     )
