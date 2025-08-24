@@ -387,6 +387,7 @@ function MovieCarousel({
 }: MovieCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [moviesPerPage, setMoviesPerPage] = useState(2)
+  const [touchedId, setTouchedId] = useState<number | null>(null)
 
   useEffect(() => {
     const updateMoviesPerPage = () => {
@@ -431,7 +432,7 @@ function MovieCarousel({
   }
 
   return (
-    <div className="relative group overflow-hidden px-2 sm:px-4">
+    <div className="relative overflow-x-hidden px-2 sm:px-4">
       <div 
         className="flex transition-transform duration-300 ease-in-out touch-pan-x snap-x snap-mandatory"
         style={{ transform: `translateX(-${currentIndex * (100 / moviesPerPage)}%)` }}
@@ -444,6 +445,8 @@ function MovieCarousel({
             key={movie.id}
             className="flex-none w-1/2 sm:w-1/3 md:w-1/4 lg:w-1/5 px-1 sm:px-2 snap-start"
             onClick={() => goToMovie(movie.id)}
+            onTouchStart={() => setTouchedId(movie.id)}
+            onTouchEnd={() => setTouchedId(null)}
           >
             <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-gray-800 group/card cursor-pointer">
               <img
@@ -456,8 +459,12 @@ function MovieCarousel({
                   target.src = 'https://via.placeholder.com/300x450/1f2937/ffffff?text=Image+non+disponible'
                 }}
               />
-              {/* Gradient visible uniquement au hover sur tablette/desktop, caché par défaut sur mobile */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 sm:group-hover/card:opacity-100 transition-opacity duration-300 pointer-events-none" aria-hidden="true">
+              <div
+                className={`absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent transition-opacity duration-300 pointer-events-none ${
+                  touchedId === movie.id ? 'opacity-100' : 'opacity-0 sm:group-hover/card:opacity-100'
+                }`}
+                aria-hidden="true"
+              >
                 <div className="absolute bottom-0 left-0 right-0 p-2 sm:p-4">
                   <h4 className="text-white font-semibold text-xs sm:text-sm mb-1 line-clamp-2">
                     {movie.title}
@@ -472,7 +479,11 @@ function MovieCarousel({
                     </span>
                   </div>
                 </div>
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div
+                  className={`absolute inset-0 flex items-center justify-center pointer-events-none ${
+                    touchedId === movie.id ? 'opacity-100' : 'opacity-0 sm:group-hover/card:opacity-100'
+                  }`}
+                >
                   <button 
                     onClick={(e) => {
                       e.stopPropagation()
@@ -517,10 +528,10 @@ function MovieCarousel({
       {currentIndex > 0 && (
         <button
           onClick={prevSlide}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-red-600/90 hover:bg-red-700 text-white rounded-full p-2 transition-all duration-200 shadow-lg border-2 border-white/20"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-red-600/90 hover:bg-red-700 text-white rounded-full p-1.5 transition-all duration-200 shadow-lg border-2 border-white/20"
           aria-label="Film précédent"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
@@ -528,10 +539,10 @@ function MovieCarousel({
       {currentIndex < maxIndex && (
         <button
           onClick={nextSlide}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-red-600/90 hover:bg-red-700 text-white rounded-full p-2 transition-all duration-200 shadow-lg border-2 border-white/20"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-red-600/90 hover:bg-red-700 text-white rounded-full p-1.5 transition-all duration-200 shadow-lg border-2 border-white/20"
           aria-label="Film suivant"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </button>
