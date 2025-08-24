@@ -56,7 +56,7 @@ export default withAuth(
         console.log('🔐 Auth callback - Path:', pathname, 'Token exists:', !!token)
 
         // Pages publiques (accessibles sans connexion)
-        const publicPages = ["/", "/login", "/register", "/forgot-password", "/api/auth"]
+      const publicPages = ["/", "/login", "/register", "/forgot-password", "/api/auth", "/preferences/success"]
         const isPublicPage = publicPages.some(page => pathname.startsWith(page))
         
         if (isPublicPage) {

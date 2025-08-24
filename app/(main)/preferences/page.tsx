@@ -51,9 +51,10 @@ export default function PreferencesPage() {
   }
 
   const handleSavePreferences = async () => {
-  if (selectedGenres.length < 3) return
+  if (selectedGenres.length < 3 || isProcessing) return
 
   console.log('🚀 Début sauvegarde, genres sélectionnés:', selectedGenres)
+  setIsProcessing(true)
   setSaving(true)
   
   try {
@@ -71,18 +72,13 @@ export default function PreferencesPage() {
       const data = await response.json()
       console.log('✅ Préférences sauvegardées:', data)
       
-      // Redirection immédiate sans attendre la session
-      console.log('🏠 Redirection immédiate vers /home...')
-      window.location.replace('/home')// replace au lieu de push pour éviter le back
-      
-      // Optionnel: forcer un hard reload de la page
-      // window.location.replace('/home')
+      console.log('🏠 Redirection vers page de succès...')
+      // Rediriger vers une page intermédiaire qui ne dépend pas du middleware
+      window.location.href = '/preferences/success'
       
     } else {
       const errorData = await response.json().catch(() => ({ error: 'Erreur inconnue' }))
       console.error('❌ Erreur API:', response.status, errorData)
-      
-      // Afficher un message d'erreur à l'utilisateur
       alert(`Erreur: ${errorData.error || 'Erreur lors de la sauvegarde'}`)
     }
   } catch (error) {
@@ -90,6 +86,7 @@ export default function PreferencesPage() {
     alert('Erreur de connexion. Vérifiez votre connexion internet.')
   } finally {
     setSaving(false)
+    setIsProcessing(false)
     console.log('🏁 Fin du processus')
   }
 }
