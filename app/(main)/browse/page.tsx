@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 
+// Types pour les données
 interface Genre {
   id: string
   name: string
@@ -38,21 +39,26 @@ export default function BrowsePage() {
   const [sortBy, setSortBy] = useState<string>('recent')
   const [userFavorites, setUserFavorites] = useState<number[]>([])
 
+  // Charger les données depuis l'API
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
+        
         const response = await fetch('/api/browse')
         const result = await response.json()
+        
         if (result.success) {
           setData(result)
         } else {
           setError('Erreur lors du chargement des films')
         }
+        
         if (session?.user) {
           try {
             const favResponse = await fetch('/api/favorites')
             const favResult = await favResponse.json()
+            
             if (favResult.success) {
               const favoriteIds = favResult.favorites.map((fav: any) => fav.id)
               setUserFavorites(favoriteIds)
@@ -61,6 +67,7 @@ export default function BrowsePage() {
             console.log('Erreur favoris (non critique):', favError)
           }
         }
+        
       } catch (err) {
         setError('Erreur de connexion')
         console.error('Erreur:', err)
@@ -68,17 +75,21 @@ export default function BrowsePage() {
         setLoading(false)
       }
     }
+
     fetchData()
   }, [session])
 
+  // Filtrer les films selon les critères
   const getFilteredMovies = (movies: Movie[]) => {
     let filtered = movies
+
     if (searchQuery) {
       filtered = filtered.filter(movie => 
         movie.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         movie.description.toLowerCase().includes(searchQuery.toLowerCase())
       )
     }
+
     switch (sortBy) {
       case 'recent':
         filtered = [...filtered].sort((a, b) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime())
@@ -93,22 +104,30 @@ export default function BrowsePage() {
         filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title))
         break
     }
+
     return filtered
   }
 
+  // Fonctions de gestion des favoris
   const toggleFavorite = async (movieId: number) => {
     if (!session?.user) {
       alert('Vous devez être connecté pour ajouter des favoris')
       return
     }
+
     const isFavorite = userFavorites.includes(movieId)
+    
     try {
       const response = await fetch('/api/favorites', {
         method: isFavorite ? 'DELETE' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ movieId }),
       })
+
       const result = await response.json()
+      
       if (result.success) {
         if (isFavorite) {
           setUserFavorites(userFavorites.filter(id => id !== movieId))
@@ -123,13 +142,16 @@ export default function BrowsePage() {
       alert('Erreur de connexion')
     }
   }
-
+  
   const handleGenreFilter = async (genre: string) => {
     setSelectedGenre(genre)
+    
     if (genre === 'Tous les genres') {
       const response = await fetch('/api/browse')
       const result = await response.json()
-      if (result.success) setData(result)
+      if (result.success) {
+        setData(result)
+      }
     } else {
       const response = await fetch(`/api/browse?genre=${encodeURIComponent(genre)}`)
       const result = await response.json()
@@ -178,14 +200,18 @@ export default function BrowsePage() {
 
   return (
     <div className="min-h-screen bg-black">
+      {/* ✅ Hero Section - BOUTONS SUPPRIMÉS */}
       <div className="relative h-[50vh] sm:h-[70vh] overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url('https://image.tmdb.org/t/p/original/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg')` }}
+          style={{
+            backgroundImage: `url('https://image.tmdb.org/t/p/original/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg')`,
+          }}
         >
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/30"></div>
         </div>
+
         <div className="relative z-10 flex items-center h-full px-4 sm:px-8 max-w-7xl mx-auto">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 mb-4">
@@ -216,9 +242,12 @@ export default function BrowsePage() {
                 </div>
               </div>
             )}
+            {/* ✅ BOUTONS SUPPRIMÉS - Plus de boutons "Parcourir tout" et "Plus d'infos" */}
           </div>
         </div>
       </div>
+
+      {/* Section Filtres et Recherche */}
       <div className="relative z-20 bg-black px-4 sm:px-8 py-6">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-wrap items-center gap-4">
@@ -281,6 +310,8 @@ export default function BrowsePage() {
           )}
         </div>
       </div>
+
+      {/* Section Catalogue */}
       <div id="catalogue-section" className="px-4 sm:px-8 py-8 sm:py-12">
         <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
           {selectedGenre === 'Tous les genres' && data?.recentMovies && data.recentMovies.length > 0 && !searchQuery && (
@@ -375,6 +406,7 @@ interface MovieCarouselProps {
   isUserLoggedIn?: boolean
 }
 
+// ✅ CARROUSEL AVEC BOUTONS VISIBLES SUR MOBILE
 function MovieCarousel({ 
   movies, 
   userFavorites = [], 
@@ -382,29 +414,43 @@ function MovieCarousel({
   isUserLoggedIn = false 
 }: MovieCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [moviesPerPage, setMoviesPerPage] = useState(1)
+  const [moviesPerPage, setMoviesPerPage] = useState(2)
 
   useEffect(() => {
     const updateMoviesPerPage = () => {
-      if (window.innerWidth < 640) setMoviesPerPage(1)      // Mobile: 1 film
+      if (window.innerWidth < 640) setMoviesPerPage(2)      // Mobile: 2 films
       else if (window.innerWidth < 768) setMoviesPerPage(3) // Tablette: 3 films
       else if (window.innerWidth < 1024) setMoviesPerPage(4) // Desktop small: 4 films
       else setMoviesPerPage(5) // Desktop large: 5 films
     }
+
     updateMoviesPerPage()
     window.addEventListener('resize', updateMoviesPerPage)
     return () => window.removeEventListener('resize', updateMoviesPerPage)
   }, [])
 
   const maxIndex = Math.max(0, movies.length - moviesPerPage)
-  const nextSlide = () => setCurrentIndex(Math.min(currentIndex + 1, maxIndex))
-  const prevSlide = () => setCurrentIndex(Math.max(currentIndex - 1, 0))
 
+  const nextSlide = () => {
+    setCurrentIndex(Math.min(currentIndex + 1, maxIndex))
+  }
+
+  const prevSlide = () => {
+    setCurrentIndex(Math.max(currentIndex - 1, 0))
+  }
+
+  // Support tactile pour swipe
   const [touchStart, setTouchStart] = useState(0)
   const [touchEnd, setTouchEnd] = useState(0)
 
-  const handleTouchStart = (e: React.TouchEvent) => setTouchStart(e.targetTouches[0].clientX)
-  const handleTouchMove = (e: React.TouchEvent) => setTouchEnd(e.targetTouches[0].clientX)
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStart(e.targetTouches[0].clientX)
+  }
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX)
+  }
+
   const handleTouchEnd = () => {
     if (!touchStart || !touchEnd) return
     const distance = touchStart - touchEnd
@@ -429,7 +475,7 @@ function MovieCarousel({
   return (
     <div className="relative group overflow-hidden">
       <div 
-        className="flex transition-transform duration-300 ease-in-out snap-x snap-mandatory touch-pan-x"
+        className="flex transition-transform duration-300 ease-in-out touch-pan-x"
         style={{ transform: `translateX(-${currentIndex * (100 / moviesPerPage)}%)` }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
@@ -438,14 +484,14 @@ function MovieCarousel({
         {movies.map((movie) => (
           <div
             key={movie.id}
-            className="flex-none w-full sm:w-1/3 md:w-1/4 lg:w-1/5 snap-center px-2 sm:px-3"
+            className="flex-none w-1/2 sm:w-1/3 md:w-1/4 lg:w-1/5 px-1 sm:px-2"
             onClick={() => goToMovie(movie.id)}
           >
             <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-gray-800 group/card cursor-pointer">
               <img
                 src={movie.thumbnail_url}
                 alt={movie.title}
-                className="w-full h-[200px] sm:h-[300px] object-cover transition-transform duration-300 group-hover/card:scale-110"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover/card:scale-110"
                 loading="lazy"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement
@@ -505,55 +551,48 @@ function MovieCarousel({
                   </svg>
                 </button>
               )}
-              {!isUserLoggedIn && (
-                <div className="absolute top-1 sm:top-2 left-1/2 transform -translate-x-1/2">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      alert('Connectez-vous pour ajouter des films à votre liste !')
-                    }}
-                    className="bg-white/20 backdrop-blur-sm text-white p-1 sm:p-2 rounded-full hover:bg-gray-600 transition-colors"
-                    title="Connectez-vous pour ajouter à vos favoris"
-                  >
-                    <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                    </svg>
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         ))}
       </div>
+      
+      {/* ✅ BOUTONS CARROUSEL - TOUJOURS VISIBLES ET PLUS GROS SUR MOBILE */}
       {currentIndex > 0 && (
         <button
           onClick={prevSlide}
-          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-black/80 hover:bg-black/90 rounded-full p-3 sm:p-4 transition-all duration-200 shadow-lg"
+          className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 z-30 bg-red-600/90 hover:bg-red-700 text-white rounded-full p-2 sm:p-3 transition-all duration-200 shadow-lg border-2 border-white/20"
           aria-label="Film précédent"
         >
-          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
       )}
+      
       {currentIndex < maxIndex && (
         <button
           onClick={nextSlide}
-          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-black/80 hover:bg-black/90 rounded-full p-3 sm:p-4 transition-all duration-200 shadow-lg"
+          className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 z-30 bg-red-600/90 hover:bg-red-700 text-white rounded-full p-2 sm:p-3 transition-all duration-200 shadow-lg border-2 border-white/20"
           aria-label="Film suivant"
         >
-          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+          <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3">
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </button>
       )}
+
+      {/* Indicateurs de pagination - Visible seulement sur mobile */}
       {movies.length > moviesPerPage && (
         <div className="flex justify-center mt-4 space-x-2 sm:hidden">
           {Array.from({ length: Math.ceil(movies.length / moviesPerPage) }).map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentIndex(index)}
-              className={`w-3 h-3 rounded-full transition-all ${Math.floor(currentIndex / moviesPerPage) === index ? 'bg-red-500 scale-125' : 'bg-gray-500 hover:bg-gray-400'}`}
+              className={`w-2 h-2 rounded-full transition-all ${
+                Math.floor(currentIndex / moviesPerPage) === index 
+                  ? 'bg-red-500 scale-125' 
+                  : 'bg-gray-500 hover:bg-gray-400'
+              }`}
             />
           ))}
         </div>
