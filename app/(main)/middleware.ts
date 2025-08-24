@@ -6,28 +6,46 @@ export default withAuth(
     const token = request.nextauth.token
     const { pathname } = request.nextUrl
 
+    console.log('🔍 Middleware - Path:', pathname)
+    console.log('🔍 Middleware - Token exists:', !!token)
+    console.log('🔍 Middleware - Preferences completed:', token?.preferencesCompleted)
+
     // Si utilisateur connecté
     if (token) {
-      // Si il va sur les pages d'auth, rediriger selon ses préférences
+      // Redirection depuis les pages d'authentification
       if (pathname === "/" || pathname === "/login" || pathname === "/register") {
         if (!token.preferencesCompleted) {
+          console.log('🔄 Redirection: auth page -> /preferences')
           return NextResponse.redirect(new URL("/preferences", request.url))
         } else {
+          console.log('🔄 Redirection: auth page -> /home')
           return NextResponse.redirect(new URL("/home", request.url))
         }
       }
 
-      // Si il va sur /preferences mais a déjà complété, rediriger vers /home
+      // Si l'utilisateur va sur /preferences mais a déjà complété
       if (pathname === "/preferences" && token.preferencesCompleted) {
+        console.log('🔄 Redirection: /preferences -> /home (déjà complété)')
         return NextResponse.redirect(new URL("/home", request.url))
       }
 
-      // Si il va sur /home mais n'a pas complété les préférences
+      // Protection de /home : rediriger vers /preferences si pas complété
       if (pathname === "/home" && !token.preferencesCompleted) {
+        console.log('🔄 Redirection: /home -> /preferences (pas complété)')
         return NextResponse.redirect(new URL("/preferences", request.url))
+      }
+
+      // Autoriser l'accès aux autres pages protégées si les préférences sont complétées
+      const protectedPages = ["/profile", "/watch", "/movies", "/series"]
+      if (protectedPages.some(page => pathname.startsWith(page))) {
+        if (!token.preferencesCompleted) {
+          console.log('🔄 Redirection: page protégée -> /preferences')
+          return NextResponse.redirect(new URL("/preferences", request.url))
+        }
       }
     }
 
+    console.log('✅ Middleware - Autorisation accordée')
     return NextResponse.next()
   },
   {
@@ -35,18 +53,29 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl
 
-        // Pages publiques (pas besoin d'être connecté)
-        const publicPages = ["/", "/login", "/register", "/forgot-password"]
-        if (publicPages.includes(pathname)) {
+        console.log('🔐 Auth callback - Path:', pathname, 'Token exists:', !!token)
+
+        // Pages publiques (accessibles sans connexion)
+        const publicPages = ["/", "/login", "/register", "/forgot-password", "/api/auth"]
+        const isPublicPage = publicPages.some(page => pathname.startsWith(page))
+        
+        if (isPublicPage) {
+          console.log('✅ Page publique autorisée')
           return true
         }
 
-        // Pages protégées (besoin d'être connecté)
-        const protectedPages = ["/home", "/preferences", "/profile", "/watch"]
-        if (protectedPages.some(page => pathname.startsWith(page))) {
-          return !!token
+        // Pages protégées (nécessitent une connexion)
+        const protectedPages = ["/home", "/preferences", "/profile", "/watch", "/movies", "/series"]
+        const isProtectedPage = protectedPages.some(page => pathname.startsWith(page))
+        
+        if (isProtectedPage) {
+          const isAuthorized = !!token
+          console.log('🔐 Page protégée -', isAuthorized ? 'Autorisée' : 'Refusée')
+          return isAuthorized
         }
 
+        // Par défaut, autoriser (pour les autres routes comme /api, etc.)
+        console.log('✅ Route autorisée par défaut')
         return true
       },
     },
@@ -55,6 +84,14 @@ export default withAuth(
 
 export const config = {
   matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api/auth (NextAuth API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder files
+     */
+    "/((?!api/auth|_next/static|_next/image|favicon.ico|public).*)",
   ],
 }
