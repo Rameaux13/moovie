@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSession } from 'next-auth/react'
-import { Metadata } from 'next'
 
-// Types pour les données
 interface Genre {
   id: string
   name: string
@@ -40,26 +38,21 @@ export default function BrowsePage() {
   const [sortBy, setSortBy] = useState<string>('recent')
   const [userFavorites, setUserFavorites] = useState<number[]>([])
 
-  // Charger les données depuis l'API
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
-        
         const response = await fetch('/api/browse')
         const result = await response.json()
-        
         if (result.success) {
           setData(result)
         } else {
           setError('Erreur lors du chargement des films')
         }
-        
         if (session?.user) {
           try {
             const favResponse = await fetch('/api/favorites')
             const favResult = await favResponse.json()
-            
             if (favResult.success) {
               const favoriteIds = favResult.favorites.map((fav: any) => fav.id)
               setUserFavorites(favoriteIds)
@@ -68,7 +61,6 @@ export default function BrowsePage() {
             console.log('Erreur favoris (non critique):', favError)
           }
         }
-        
       } catch (err) {
         setError('Erreur de connexion')
         console.error('Erreur:', err)
@@ -76,21 +68,17 @@ export default function BrowsePage() {
         setLoading(false)
       }
     }
-
     fetchData()
   }, [session])
 
-  // Filtrer les films selon les critères
   const getFilteredMovies = (movies: Movie[]) => {
     let filtered = movies
-
     if (searchQuery) {
       filtered = filtered.filter(movie => 
         movie.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         movie.description.toLowerCase().includes(searchQuery.toLowerCase())
       )
     }
-
     switch (sortBy) {
       case 'recent':
         filtered = [...filtered].sort((a, b) => new Date(b.release_date).getTime() - new Date(a.release_date).getTime())
@@ -105,30 +93,22 @@ export default function BrowsePage() {
         filtered = [...filtered].sort((a, b) => a.title.localeCompare(b.title))
         break
     }
-
     return filtered
   }
 
-  // Fonctions de gestion des favoris
   const toggleFavorite = async (movieId: number) => {
     if (!session?.user) {
       alert('Vous devez être connecté pour ajouter des favoris')
       return
     }
-
     const isFavorite = userFavorites.includes(movieId)
-    
     try {
       const response = await fetch('/api/favorites', {
         method: isFavorite ? 'DELETE' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ movieId }),
       })
-
       const result = await response.json()
-      
       if (result.success) {
         if (isFavorite) {
           setUserFavorites(userFavorites.filter(id => id !== movieId))
@@ -143,16 +123,13 @@ export default function BrowsePage() {
       alert('Erreur de connexion')
     }
   }
-  
+
   const handleGenreFilter = async (genre: string) => {
     setSelectedGenre(genre)
-    
     if (genre === 'Tous les genres') {
       const response = await fetch('/api/browse')
       const result = await response.json()
-      if (result.success) {
-        setData(result)
-      }
+      if (result.success) setData(result)
     } else {
       const response = await fetch(`/api/browse?genre=${encodeURIComponent(genre)}`)
       const result = await response.json()
@@ -201,80 +178,51 @@ export default function BrowsePage() {
 
   return (
     <div className="min-h-screen bg-black">
-      <div className="relative h-[70vh] overflow-hidden">
+      <div className="relative h-[50vh] sm:h-[70vh] overflow-hidden">
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{
-            backgroundImage: `url('https://image.tmdb.org/t/p/original/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg')`,
-          }}
+          style={{ backgroundImage: `url('https://image.tmdb.org/t/p/original/8cdWjvZQUExUUTzyp4t6EDMubfO.jpg')` }}
         >
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-transparent to-black/30"></div>
         </div>
-
-        <div className="relative z-10 flex items-center h-full px-8 max-w-7xl mx-auto">
+        <div className="relative z-10 flex items-center h-full px-4 sm:px-8 max-w-7xl mx-auto">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 mb-4">
-              <span className="bg-red-600 text-white px-3 py-1 text-sm font-bold uppercase tracking-wide">
+              <span className="bg-red-600 text-white px-3 py-1 text-xs sm:text-sm font-bold uppercase tracking-wide">
                 Film Original NETFLIX
               </span>
             </div>
-            <h1 className="text-5xl md:text-7xl font-bold text-white mb-4 leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-4 leading-tight">
               Catalogue
             </h1>
-            <p className="text-xl text-gray-200 mb-8 leading-relaxed max-w-xl">
+            <p className="text-base sm:text-xl text-gray-200 mb-8 leading-relaxed max-w-xl">
               Découvrez notre collection complète de films et séries. 
               Des blockbusters aux films d'auteur, trouvez votre prochaine obsession.
             </p>
             {data && (
-              <div className="flex gap-6 mb-8">
+              <div className="flex gap-4 sm:gap-6 mb-8">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-red-500">
+                  <p className="text-xl sm:text-2xl font-bold text-red-500">
                     {data.moviesByGenre.reduce((acc, genre) => acc + genre.movies.length, 0)}
                   </p>
-                  <p className="text-gray-300 text-sm">Films disponibles</p>
+                  <p className="text-gray-300 text-xs sm:text-sm">Films disponibles</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-red-500">
+                  <p className="text-xl sm:text-2xl font-bold text-red-500">
                     {data.moviesByGenre.length}
                   </p>
-                  <p className="text-gray-300 text-sm">Genres</p>
+                  <p className="text-gray-300 text-xs sm:text-sm">Genres</p>
                 </div>
               </div>
             )}
-            <div className="flex flex-wrap gap-4">
-              <button 
-                onClick={() => {
-                  const catalogueSection = document.querySelector('#catalogue-section')
-                  catalogueSection?.scrollIntoView({ behavior: 'smooth' })
-                }}
-                className="flex items-center gap-3 bg-white text-black font-semibold px-8 py-3 rounded-md hover:bg-gray-200 transition-colors duration-200"
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-                Parcourir tout
-              </button>
-              <button 
-                onClick={() => {
-                  alert('Fonctionnalité "Plus d\'infos" - À développer dans la prochaine étape!')
-                }}
-                className="flex items-center gap-3 bg-gray-600/70 text-white font-semibold px-8 py-3 rounded-md hover:bg-gray-600 transition-colors duration-200 backdrop-blur-sm"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Plus d'infos
-              </button>
-            </div>
           </div>
         </div>
       </div>
-
-      <div className="relative z-20 bg-black px-8 py-6">
+      <div className="relative z-20 bg-black px-4 sm:px-8 py-6">
         <div className="max-w-7xl mx-auto space-y-6">
           <div className="flex flex-wrap items-center gap-4">
-            <h2 className="text-2xl font-bold text-white">
+            <h2 className="text-xl sm:text-2xl font-bold text-white">
               Parcourir le catalogue
             </h2>
             <div className="flex-1 max-w-md">
@@ -284,7 +232,7 @@ export default function BrowsePage() {
                   placeholder="Rechercher un film..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-gray-800 text-white px-4 py-2 pl-10 rounded-lg border border-gray-700 focus:border-red-500 focus:outline-none transition-colors"
+                  className="w-full bg-gray-800 text-white px-4 py-2 pl-10 rounded-lg border border-gray-700 focus:border-red-500 focus:outline-none transition-colors text-sm sm:text-base"
                 />
                 <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -292,11 +240,11 @@ export default function BrowsePage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm">Trier par:</span>
+              <span className="text-gray-400 text-xs sm:text-sm">Trier par:</span>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-gray-800 text-white px-3 py-2 rounded border border-gray-700 focus:border-red-500 focus:outline-none text-sm"
+                className="bg-gray-800 text-white px-3 py-2 rounded border border-gray-700 focus:border-red-500 focus:outline-none text-xs sm:text-sm"
               >
                 <option value="recent">Plus récents</option>
                 <option value="popular">Popularité</option>
@@ -306,13 +254,13 @@ export default function BrowsePage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <span className="text-gray-400 text-sm font-medium">Genres:</span>
-            <div className="flex flex-wrap gap-3">
+            <span className="text-gray-400 text-xs sm:text-sm font-medium">Genres:</span>
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {['Tous les genres', 'Action', 'Romance', 'Comédie', 'Drame', 'Horreur', 'Science-Fiction', 'Thriller', 'Aventure', 'Animation', 'Documentaire'].map((genre) => (
                 <button
                   key={genre}
                   onClick={() => handleGenreFilter(genre)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                  className={`px-3 sm:px-4 py-1 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 ${
                     genre === selectedGenre
                       ? 'bg-red-600 text-white shadow-lg'
                       : 'bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white'
@@ -324,7 +272,7 @@ export default function BrowsePage() {
             </div>
           </div>
           {searchQuery && (
-            <div className="text-gray-400 text-sm">
+            <div className="text-gray-400 text-xs sm:text-sm">
               Recherche: "<span className="text-white">{searchQuery}</span>"
               {selectedGenre !== 'Tous les genres' && (
                 <span> dans <span className="text-red-500">{selectedGenre}</span></span>
@@ -333,12 +281,11 @@ export default function BrowsePage() {
           )}
         </div>
       </div>
-
-      <div id="catalogue-section" className="px-4 sm:px-8 py-12">
-        <div className="max-w-7xl mx-auto space-y-12">
+      <div id="catalogue-section" className="px-4 sm:px-8 py-8 sm:py-12">
+        <div className="max-w-7xl mx-auto space-y-8 sm:space-y-12">
           {selectedGenre === 'Tous les genres' && data?.recentMovies && data.recentMovies.length > 0 && !searchQuery && (
             <section>
-              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+              <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center gap-3">
                 <span className="text-red-500">🆕</span>
                 Nouveautés
               </h3>
@@ -352,7 +299,7 @@ export default function BrowsePage() {
           )}
           {selectedGenre === 'Tous les genres' && data?.popularMovies && data.popularMovies.length > 0 && !searchQuery && (
             <section>
-              <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+              <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center gap-3">
                 <span className="text-red-500">🔥</span>
                 Tendances
               </h3>
@@ -368,14 +315,14 @@ export default function BrowsePage() {
             const filteredMovies = getFilteredMovies(genre.movies)
             return filteredMovies.length > 0 && (
               <section key={genre.id}>
-                <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+                <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center gap-3">
                   <span className="text-red-500">{genre.icon}</span>
                   Films {genre.name}
-                  <span className="text-gray-500 text-lg font-normal">
+                  <span className="text-gray-500 text-base sm:text-lg font-normal">
                     ({filteredMovies.length})
                   </span>
                   {searchQuery && (
-                    <span className="text-gray-400 text-base font-normal">
+                    <span className="text-gray-400 text-sm sm:text-base font-normal">
                       - correspondant à "{searchQuery}"
                     </span>
                   )}
@@ -391,11 +338,11 @@ export default function BrowsePage() {
           })}
           {data && data.moviesByGenre.every(genre => getFilteredMovies(genre.movies).length === 0) && (
             <div className="text-center py-16">
-              <div className="text-6xl mb-4">🔍</div>
-              <p className="text-gray-400 text-xl mb-2">
+              <div className="text-4xl sm:text-6xl mb-4">🔍</div>
+              <p className="text-gray-400 text-lg sm:text-xl mb-2">
                 Aucun film trouvé
               </p>
-              <p className="text-gray-500">
+              <p className="text-gray-500 text-sm sm:text-base">
                 {searchQuery ? (
                   <>Essayez avec d'autres mots-clés ou changez de genre</>
                 ) : (
@@ -408,7 +355,7 @@ export default function BrowsePage() {
                     setSearchQuery('')
                     setSelectedGenre('Tous les genres')
                   }}
-                  className="mt-4 bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition-colors"
+                  className="mt-4 bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition-colors text-sm sm:text-base"
                 >
                   Réinitialiser les filtres
                 </button>
@@ -439,39 +386,25 @@ function MovieCarousel({
 
   useEffect(() => {
     const updateMoviesPerPage = () => {
-      if (window.innerWidth < 640) setMoviesPerPage(1)      // Mobile: 1 movie
-      else if (window.innerWidth < 768) setMoviesPerPage(3) // Tablet: 3 movies
-      else if (window.innerWidth < 1024) setMoviesPerPage(4) // Desktop small: 4 movies
-      else setMoviesPerPage(5) // Desktop large: 5 movies
+      if (window.innerWidth < 640) setMoviesPerPage(1)      // Mobile: 1 film
+      else if (window.innerWidth < 768) setMoviesPerPage(3) // Tablette: 3 films
+      else if (window.innerWidth < 1024) setMoviesPerPage(4) // Desktop small: 4 films
+      else setMoviesPerPage(5) // Desktop large: 5 films
     }
-
     updateMoviesPerPage()
     window.addEventListener('resize', updateMoviesPerPage)
     return () => window.removeEventListener('resize', updateMoviesPerPage)
   }, [])
 
   const maxIndex = Math.max(0, movies.length - moviesPerPage)
+  const nextSlide = () => setCurrentIndex(Math.min(currentIndex + 1, maxIndex))
+  const prevSlide = () => setCurrentIndex(Math.max(currentIndex - 1, 0))
 
-  const nextSlide = () => {
-    setCurrentIndex(Math.min(currentIndex + 1, maxIndex))
-  }
-
-  const prevSlide = () => {
-    setCurrentIndex(Math.max(currentIndex - 1, 0))
-  }
-
-  // Swipe support
   const [touchStart, setTouchStart] = useState(0)
   const [touchEnd, setTouchEnd] = useState(0)
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchStart(e.targetTouches[0].clientX)
-  }
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
-
+  const handleTouchStart = (e: React.TouchEvent) => setTouchStart(e.targetTouches[0].clientX)
+  const handleTouchMove = (e: React.TouchEvent) => setTouchEnd(e.targetTouches[0].clientX)
   const handleTouchEnd = () => {
     if (!touchStart || !touchEnd) return
     const distance = touchStart - touchEnd
@@ -595,36 +528,32 @@ function MovieCarousel({
       {currentIndex > 0 && (
         <button
           onClick={prevSlide}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-red-600 text-white p-4 rounded-full shadow-lg hover:bg-red-700 transition-all duration-200"
-          aria-label="Previous movie"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-black/80 hover:bg-black/90 rounded-full p-3 sm:p-4 transition-all duration-200 shadow-lg"
+          aria-label="Film précédent"
         >
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
       )}
       {currentIndex < maxIndex && (
         <button
           onClick={nextSlide}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-red-600 text-white p-4 rounded-full shadow-lg hover:bg-red-700 transition-all duration-200"
-          aria-label="Next movie"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-black/80 hover:bg-black/90 rounded-full p-3 sm:p-4 transition-all duration-200 shadow-lg"
+          aria-label="Film suivant"
         >
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
         </button>
       )}
       {movies.length > moviesPerPage && (
-        <div className="flex justify-center mt-4 gap-2 sm:gap-3">
+        <div className="flex justify-center mt-4 space-x-2 sm:hidden">
           {Array.from({ length: Math.ceil(movies.length / moviesPerPage) }).map((_, index) => (
             <button
               key={index}
-              onClick={() => setCurrentIndex(index * moviesPerPage)}
-              className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                Math.floor(currentIndex / moviesPerPage) === index 
-                  ? 'bg-red-600 scale-125' 
-                  : 'bg-gray-600 hover:bg-gray-500'
-              }`}
+              onClick={() => setCurrentIndex(index)}
+              className={`w-3 h-3 rounded-full transition-all ${Math.floor(currentIndex / moviesPerPage) === index ? 'bg-red-500 scale-125' : 'bg-gray-500 hover:bg-gray-400'}`}
             />
           ))}
         </div>
