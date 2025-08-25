@@ -611,7 +611,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
         className={`w-full h-full object-contain select-none pointer-events-auto transition-all duration-500 ${
           isRecordingDetected ? 'blur-3xl' : ''
         }`}
-        src={`https://drive.google.com/file/d/1jzbd6MMUBKdXPs14Ym_q8ahj-g1PtUk9/preview`}
+        src="https://docs.google.com/uc?export=download&id=1jzbd6MMUBKdXPs14Ym_q8ahj-g1PtUk9"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onPlay={() => setIsPlaying(true)}
