@@ -19,6 +19,28 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+// ===== CONFIGURATION TPE CLOUD =====
+const TPE_CLOUD_CONFIG = {
+  BASE_URL: 'https://sp-p6.com/axelle',
+  VIDEOS_PATH: '/videos/',
+  THUMBNAILS_PATH: '/images/',
+  
+  getVideoUrl: (fileName: string) => {
+    return `${TPE_CLOUD_CONFIG.BASE_URL}${TPE_CLOUD_CONFIG.VIDEOS_PATH}${fileName}`;
+  },
+  
+  getThumbnailUrl: (fileName: string) => {
+    return `${TPE_CLOUD_CONFIG.BASE_URL}${TPE_CLOUD_CONFIG.THUMBNAILS_PATH}${fileName}`;
+  }
+};
+
+// Configuration vidéo
+const VIDEO_CONFIG = {
+  crossOrigin: "anonymous" as const,
+  preload: "metadata" as const,
+  playsInline: true
+};
+
 interface MovieData {
   id: number;
   title: string;
@@ -596,6 +618,9 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
 
   const { icon: downloadIcon, text: downloadText } = getDownloadButtonContent();
 
+  // ===== CONSTRUCTION DE L'URL VIDÉO DYNAMIQUE =====
+  const videoSrc = TPE_CLOUD_CONFIG.getVideoUrl(watchData.movie.video_file_path);
+
   return (
     <div 
       ref={containerRef}
@@ -605,13 +630,14 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
       onClick={() => setShowControls(!showControls)}
       style={{ userSelect: 'none' }}
     >
-      {/* Vidéo */}
+      {/* Vidéo - MODIFIÉE POUR UTILISER TPE CLOUD */}
       <video
         ref={videoRef}
         className={`w-full h-full object-contain select-none pointer-events-auto transition-all duration-500 ${
           isRecordingDetected ? 'blur-3xl' : ''
         }`}
-        src="https://docs.google.com/uc?export=download&id=1jzbd6MMUBKdXPs14Ym_q8ahj-g1PtUk9"
+        src={videoSrc}
+        {...VIDEO_CONFIG}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onPlay={() => setIsPlaying(true)}
@@ -623,6 +649,8 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
         onError={(e) => {
           const target = e.target as HTMLVideoElement;
           console.log('ERREUR VIDÉO:', target.src);
+          console.log('URL utilisée:', videoSrc);
+          setError(`Erreur de chargement: ${watchData.movie.video_file_path}`);
         }}
         controlsList="nodownload noremoteplayback"
         disablePictureInPicture={true}
@@ -818,8 +846,6 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
               />
             </div>
 
-            {/* Bouton RESET DEBUG */}
-
             {/* Bouton téléchargement */}
             <button 
               onClick={handleDownload}
@@ -880,4 +906,4 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
       )}
     </div>
   );
-} 
+}
