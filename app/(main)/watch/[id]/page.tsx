@@ -16,7 +16,9 @@ import {
   Loader2,
   Download,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  MoreVertical,
+  Minimize
 } from 'lucide-react';
 
 // ===== CONFIGURATION TPE CLOUD =====
@@ -102,6 +104,8 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
   const [showControls, setShowControls] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showOverlay, setShowOverlay] = useState(true);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
   // États pour protection anti-enregistrement
   const [isRecordingDetected, setIsRecordingDetected] = useState(false);
@@ -123,6 +127,18 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
   const saveProgressInterval = useRef<NodeJS.Timeout | null>(null);
   const hideControlsTimeout = useRef<NodeJS.Timeout | null>(null);
   const recordingDetectionInterval = useRef<NodeJS.Timeout | null>(null);
+
+  // Détection mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Fonction pour vérifier le statut de téléchargement
   const checkDownloadStatus = async (movieId: number) => {
@@ -193,18 +209,18 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
   // Obtenir l'icône et le texte du bouton téléchargement
   const getDownloadButtonContent = () => {
     if (downloadStatus.isLoading) {
-      return { icon: <Loader2 className="w-6 h-6 animate-spin" />, text: "Téléchargement..." };
+      return { icon: <Loader2 className={`animate-spin ${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />, text: "Téléchargement..." };
     }
     
     if (downloadStatus.isDownloaded) {
-      return { icon: <CheckCircle className="w-6 h-6" />, text: "Téléchargé" };
+      return { icon: <CheckCircle className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />, text: "Téléchargé" };
     }
     
     if (!downloadStatus.canDownload) {
-      return { icon: <AlertCircle className="w-6 h-6" />, text: "Premium requis" };
+      return { icon: <AlertCircle className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />, text: "Premium requis" };
     }
     
-    return { icon: <Download className="w-6 h-6" />, text: "Télécharger" };
+    return { icon: <Download className={`${isMobile ? 'w-5 h-5' : 'w-6 h-6'}`} />, text: "Télécharger" };
   };
 
   // Protection anti-téléchargement
@@ -401,14 +417,14 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
       }
       
       hideControlsTimeout.current = setTimeout(() => {
-        if (isPlaying) {
+        if (isPlaying && !isMobile) {
           setShowControls(false);
         }
       }, 3000);
     };
 
     const container = containerRef.current;
-    if (container) {
+    if (container && !isMobile) {
       container.addEventListener('mousemove', handleMouseMove);
       container.addEventListener('mouseleave', () => {
         if (isPlaying) {
@@ -425,7 +441,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
         clearTimeout(hideControlsTimeout.current);
       }
     };
-  }, [isPlaying]);
+  }, [isPlaying, isMobile]);
 
   // Masquer l'overlay après 5 secondes
   useEffect(() => {
@@ -587,6 +603,13 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Gestion tactile pour mobile
+  const handleVideoClick = () => {
+    if (isMobile) {
+      setShowControls(!showControls);
+    }
+  };
+
   // États de chargement et d'erreur
   if (loading) {
     return (
@@ -625,9 +648,9 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
     <div 
       ref={containerRef}
       className={`relative w-full h-screen bg-black overflow-hidden transition-all duration-300 select-none ${
-        showControls ? 'cursor-default' : 'cursor-none'
+        showControls || isMobile ? 'cursor-default' : 'cursor-none'
       }`}
-      onClick={() => setShowControls(!showControls)}
+      onClick={handleVideoClick}
       style={{ userSelect: 'none' }}
     >
       {/* Vidéo - MODIFIÉE POUR UTILISER TPE CLOUD */}
@@ -668,7 +691,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
 
       {/* Message de succès téléchargement */}
       {showDownloadMessage && (
-        <div className="absolute top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 z-40">
+        <div className={`absolute top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 z-40 ${isMobile ? 'text-sm' : ''}`}>
           <CheckCircle className="w-5 h-5" />
           <span>Film téléchargé avec succès !</span>
         </div>
@@ -677,18 +700,18 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
       {/* Alerte enregistrement détecté */}
       {isRecordingDetected && !isVideoBlocked && (
         <div className="absolute inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-          <div className="bg-red-600 text-white p-8 rounded-lg text-center max-w-md">
-            <div className="text-6xl mb-4">🚨</div>
-            <h2 className="text-2xl font-bold mb-4">ENREGISTREMENT DÉTECTÉ</h2>
-            <p className="mb-4">
+          <div className={`bg-red-600 text-white p-8 rounded-lg text-center max-w-md ${isMobile ? 'mx-4 p-6' : ''}`}>
+            <div className={`text-6xl mb-4 ${isMobile ? 'text-4xl mb-2' : ''}`}>🚨</div>
+            <h2 className={`text-2xl font-bold mb-4 ${isMobile ? 'text-xl mb-2' : ''}`}>ENREGISTREMENT DÉTECTÉ</h2>
+            <p className={`mb-4 ${isMobile ? 'text-sm mb-2' : ''}`}>
               Nous avons détecté une tentative d'enregistrement. La vidéo est temporairement floutée.
             </p>
-            <p className="text-sm mb-6">
+            <p className={`text-sm mb-6 ${isMobile ? 'text-xs mb-4' : ''}`}>
               Arrêtez l'enregistrement pour continuer à regarder.
             </p>
             <button
               onClick={handleStopRecording}
-              className="bg-white text-red-600 px-6 py-2 rounded font-bold hover:bg-gray-100"
+              className={`bg-white text-red-600 px-6 py-2 rounded font-bold hover:bg-gray-100 ${isMobile ? 'px-4 py-2 text-sm' : ''}`}
             >
               J'ai arrêté l'enregistrement
             </button>
@@ -699,25 +722,25 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
       {/* Vidéo bloquée */}
       {isVideoBlocked && (
         <div className="absolute inset-0 bg-black flex items-center justify-center z-50">
-          <div className="bg-red-600 text-white p-8 rounded-lg text-center max-w-md">
-            <div className="text-6xl mb-4">🚫</div>
-            <h2 className="text-2xl font-bold mb-4">LECTURE BLOQUÉE</h2>
-            <p className="mb-4">
+          <div className={`bg-red-600 text-white p-8 rounded-lg text-center max-w-md ${isMobile ? 'mx-4 p-6' : ''}`}>
+            <div className={`text-6xl mb-4 ${isMobile ? 'text-4xl mb-2' : ''}`}>🚫</div>
+            <h2 className={`text-2xl font-bold mb-4 ${isMobile ? 'text-xl mb-2' : ''}`}>LECTURE BLOQUÉE</h2>
+            <p className={`mb-4 ${isMobile ? 'text-sm mb-2' : ''}`}>
               Plusieurs tentatives d'enregistrement ont été détectées.
             </p>
-            <p className="text-sm mb-6">
+            <p className={`text-sm mb-6 ${isMobile ? 'text-xs mb-4' : ''}`}>
               La lecture a été interrompue pour protéger le contenu.
             </p>
             <div className="space-y-3">
               <button
                 onClick={handleStopRecording}
-                className="bg-white text-red-600 px-6 py-2 rounded font-bold hover:bg-gray-100 block w-full"
+                className={`bg-white text-red-600 px-6 py-2 rounded font-bold hover:bg-gray-100 block w-full ${isMobile ? 'px-4 py-2 text-sm' : ''}`}
               >
                 Reprendre (j'ai arrêté)
               </button>
               <button
                 onClick={handleBackClick}
-                className="bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700 block w-full"
+                className={`bg-gray-600 text-white px-6 py-2 rounded hover:bg-gray-700 block w-full ${isMobile ? 'px-4 py-2 text-sm' : ''}`}
               >
                 Retour au catalogue
               </button>
@@ -726,26 +749,26 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
         </div>
       )}
 
-      {/* Overlay d'informations du film */}
+      {/* Overlay d'informations du film - Optimisé mobile */}
       {showOverlay && (
         <div className="absolute top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center transition-opacity duration-500">
-          <div className="text-center text-white max-w-2xl px-8">
-            <h1 className="text-4xl font-bold mb-4">{watchData.movie.title}</h1>
-            <div className="flex items-center justify-center gap-4 mb-4">
-              <span className="bg-yellow-600 text-black px-2 py-1 rounded text-sm font-bold">
+          <div className={`text-center text-white max-w-2xl px-8 ${isMobile ? 'px-4 max-w-sm' : ''}`}>
+            <h1 className={`text-4xl font-bold mb-4 ${isMobile ? 'text-2xl mb-2' : ''}`}>{watchData.movie.title}</h1>
+            <div className={`flex items-center justify-center gap-4 mb-4 ${isMobile ? 'gap-2 mb-2 text-sm' : ''}`}>
+              <span className={`bg-yellow-600 text-black px-2 py-1 rounded text-sm font-bold ${isMobile ? 'px-1 text-xs' : ''}`}>
                 ⭐ {watchData.movie.rating}
               </span>
-              <span className="text-gray-300">{new Date(watchData.movie.release_date).getFullYear()}</span>
-              <span className="text-gray-300">{watchData.movie.duration} min</span>
+              <span className={`text-gray-300 ${isMobile ? 'text-xs' : ''}`}>{new Date(watchData.movie.release_date).getFullYear()}</span>
+              <span className={`text-gray-300 ${isMobile ? 'text-xs' : ''}`}>{watchData.movie.duration} min</span>
             </div>
-            <p className="text-lg text-gray-300 mb-6 line-clamp-3">
+            <p className={`text-lg text-gray-300 mb-6 line-clamp-3 ${isMobile ? 'text-sm mb-3 line-clamp-2' : ''}`}>
               {watchData.movie.description}
             </p>
-            <div className="flex items-center justify-center gap-2">
+            <div className={`flex items-center justify-center gap-2 flex-wrap ${isMobile ? 'gap-1' : ''}`}>
               {watchData.movie.genres.map(genre => (
                 <span 
                   key={genre.id}
-                  className="px-3 py-1 rounded-full text-sm"
+                  className={`px-3 py-1 rounded-full text-sm ${isMobile ? 'px-2 py-1 text-xs' : ''}`}
                   style={{ backgroundColor: genre.color + '20', color: genre.color }}
                 >
                   {genre.icon} {genre.name}
@@ -756,16 +779,18 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
         </div>
       )}
 
-      {/* Contrôles du lecteur */}
+      {/* Contrôles du lecteur - Version responsive */}
       <div className={`absolute bottom-0 left-0 w-full bg-gradient-to-t from-black via-black/80 to-transparent transition-opacity duration-300 ${
         showControls ? 'opacity-100' : 'opacity-0'
       }`}>
         
-        {/* Barre de progression */}
-        <div className="px-6 pb-4">
+        {/* Barre de progression - Optimisée mobile */}
+        <div className={`px-4 pb-3 ${isMobile ? 'px-2 pb-2' : 'px-6 pb-4'}`}>
           <div 
             ref={progressRef}
-            className="w-full h-2 bg-gray-600 rounded cursor-pointer hover:h-3 transition-all"
+            className={`w-full bg-gray-600 rounded cursor-pointer transition-all ${
+              isMobile ? 'h-1 hover:h-2' : 'h-2 hover:h-3'
+            }`}
             onClick={(e) => {
               if (!videoRef.current || !progressRef.current) return;
               const rect = progressRef.current.getBoundingClientRect();
@@ -782,125 +807,267 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
           </div>
         </div>
 
-        {/* Contrôles principaux */}
-        <div className="flex items-center justify-between px-6 pb-6">
-          
-          {/* Contrôles gauche */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={handleBackClick}
-              className="text-white hover:text-red-400 transition-colors"
-            >
-              <ArrowLeft className="w-8 h-8" />
-            </button>
-            
-            <button
-              onClick={togglePlay}
-              className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full transition-colors"
-            >
-              {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
-            </button>
+        {/* Contrôles principaux - Layout mobile optimisé */}
+        {isMobile ? (
+          // Version mobile compacte
+          <div className="px-2 pb-3">
+            {/* Ligne 1: Contrôles principaux */}
+            <div className="flex items-center justify-between mb-2">
+              
+              {/* Contrôles gauche */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleBackClick}
+                  className="text-white hover:text-red-400 transition-colors p-2"
+                >
+                  <ArrowLeft className="w-6 h-6" />
+                </button>
+                
+                <button
+                  onClick={togglePlay}
+                  className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full transition-colors"
+                >
+                  {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+                </button>
 
-            <div className="text-white text-sm">
-              {formatTime(currentTime)} / {formatTime(duration)}
+                <button 
+                  onClick={skipForward}
+                  className="text-white hover:text-red-400 transition-colors p-2"
+                  title="Avancer de 10 secondes"
+                >
+                  <SkipForward className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Contrôles droite */}
+              <div className="flex items-center gap-2">
+                
+                {/* Bouton favoris */}
+                <button 
+                  onClick={toggleFavorite}
+                  className="text-white hover:text-red-400 transition-colors p-2"
+                >
+                  <Heart className={`w-5 h-5 ${watchData.isFavorite ? 'fill-red-600 text-red-600' : ''}`} />
+                </button>
+
+                {/* Menu mobile */}
+                <button
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="text-white hover:text-red-400 transition-colors p-2"
+                >
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+
+                {/* Plein écran */}
+                <button
+                  onClick={() => {
+                    if (!containerRef.current) return;
+                    if (!isFullscreen) {
+                      containerRef.current.requestFullscreen();
+                    } else {
+                      document.exitFullscreen();
+                    }
+                    setIsFullscreen(!isFullscreen);
+                  }}
+                  className="text-white hover:text-red-400 transition-colors p-2"
+                >
+                  {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
-          </div>
 
-          {/* Contrôles centre */}
-          <div className="text-white text-center">
-            <h2 className="text-xl font-semibold">{watchData.movie.title}</h2>
-            {watchData.continueWatching && (
-              <p className="text-sm text-gray-400">Reprise de la lecture</p>
+            {/* Ligne 2: Titre et temps - Version mobile compacte */}
+            <div className="flex items-center justify-between">
+              <div className="text-white min-w-0 flex-1">
+                <h2 className="text-sm font-semibold truncate">{watchData.movie.title}</h2>
+                {watchData.continueWatching && (
+                  <p className="text-xs text-gray-400">Reprise</p>
+                )}
+              </div>
+              
+              <div className="text-white text-xs ml-2 whitespace-nowrap">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </div>
+            </div>
+
+            {/* Menu mobile déroulant */}
+            {showMobileMenu && (
+              <div className="absolute bottom-full right-2 mb-2 bg-black bg-opacity-90 rounded-lg p-3 min-w-[200px]">
+                
+                {/* Volume */}
+                <div className="flex items-center gap-2 mb-3">
+                  <button
+                    onClick={() => {
+                      if (!videoRef.current) return;
+                      videoRef.current.muted = !isMuted;
+                      setIsMuted(!isMuted);
+                    }}
+                    className="text-white hover:text-red-400 transition-colors"
+                  >
+                    {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                  </button>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={isMuted ? 0 : volume}
+                    onChange={(e) => {
+                      if (!videoRef.current) return;
+                      const newVolume = parseFloat(e.target.value);
+                      videoRef.current.volume = newVolume;
+                      setVolume(newVolume);
+                      setIsMuted(newVolume === 0);
+                    }}
+                    className="flex-1 accent-red-600"
+                  />
+                  <span className="text-white text-xs w-8">{Math.round((isMuted ? 0 : volume) * 100)}</span>
+                </div>
+
+                {/* Téléchargement */}
+                <button 
+                  onClick={() => {
+                    handleDownload();
+                    setShowMobileMenu(false);
+                  }}
+                  disabled={downloadStatus.isLoading || downloadStatus.isDownloaded || !downloadStatus.canDownload}
+                  className={`w-full flex items-center gap-2 p-2 rounded transition-colors ${
+                    downloadStatus.isDownloaded 
+                      ? 'text-green-400 bg-green-400 bg-opacity-10' 
+                      : downloadStatus.canDownload 
+                        ? 'text-white hover:bg-red-600 hover:bg-opacity-20' 
+                        : 'text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  {downloadIcon}
+                  <span className="text-sm">{downloadText}</span>
+                </button>
+              </div>
             )}
           </div>
-
-          {/* Contrôles droite */}
-          <div className="flex items-center gap-4">
+        ) : (
+          // Version desktop existante
+          <div className="flex items-center justify-between px-6 pb-6">
             
-            {/* Volume */}
-            <div className="flex items-center gap-2">
+            {/* Contrôles gauche */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleBackClick}
+                className="text-white hover:text-red-400 transition-colors"
+              >
+                <ArrowLeft className="w-8 h-8" />
+              </button>
+              
+              <button
+                onClick={togglePlay}
+                className="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full transition-colors"
+              >
+                {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+              </button>
+
+              <div className="text-white text-sm">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </div>
+            </div>
+
+            {/* Contrôles centre */}
+            <div className="text-white text-center">
+              <h2 className="text-xl font-semibold">{watchData.movie.title}</h2>
+              {watchData.continueWatching && (
+                <p className="text-sm text-gray-400">Reprise de la lecture</p>
+              )}
+            </div>
+
+            {/* Contrôles droite */}
+            <div className="flex items-center gap-4">
+              
+              {/* Volume */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (!videoRef.current) return;
+                    videoRef.current.muted = !isMuted;
+                    setIsMuted(!isMuted);
+                  }}
+                  className="text-white hover:text-red-400 transition-colors"
+                >
+                  {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                </button>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={isMuted ? 0 : volume}
+                  onChange={(e) => {
+                    if (!videoRef.current) return;
+                    const newVolume = parseFloat(e.target.value);
+                    videoRef.current.volume = newVolume;
+                    setVolume(newVolume);
+                    setIsMuted(newVolume === 0);
+                  }}
+                  className="w-20 accent-red-600"
+                />
+              </div>
+
+              {/* Bouton téléchargement */}
+              <button 
+                onClick={handleDownload}
+                disabled={downloadStatus.isLoading || downloadStatus.isDownloaded || !downloadStatus.canDownload}
+                className={`transition-colors ${
+                  downloadStatus.isDownloaded 
+                    ? 'text-green-400' 
+                    : downloadStatus.canDownload 
+                      ? 'text-white hover:text-red-400' 
+                      : 'text-gray-500 cursor-not-allowed'
+                }`}
+                title={downloadText}
+              >
+                {downloadIcon}
+              </button>
+
+              {/* Favoris */}
+              <button 
+                onClick={toggleFavorite}
+                className="text-white hover:text-red-400 transition-colors"
+              >
+                <Heart className={`w-6 h-6 ${watchData.isFavorite ? 'fill-red-600 text-red-600' : ''}`} />
+              </button>
+
+              {/* Avancer 10 secondes */}
+              <button 
+                onClick={skipForward}
+                className="text-white hover:text-red-400 transition-colors"
+                title="Avancer de 10 secondes"
+              >
+                <SkipForward className="w-6 h-6" />
+              </button>
+
+              {/* Plein écran */}
               <button
                 onClick={() => {
-                  if (!videoRef.current) return;
-                  videoRef.current.muted = !isMuted;
-                  setIsMuted(!isMuted);
+                  if (!containerRef.current) return;
+                  if (!isFullscreen) {
+                    containerRef.current.requestFullscreen();
+                  } else {
+                    document.exitFullscreen();
+                  }
+                  setIsFullscreen(!isFullscreen);
                 }}
                 className="text-white hover:text-red-400 transition-colors"
               >
-                {isMuted ? <VolumeX className="w-6 h-6" /> : <Volume2 className="w-6 h-6" />}
+                <Maximize className="w-6 h-6" />
               </button>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={isMuted ? 0 : volume}
-                onChange={(e) => {
-                  if (!videoRef.current) return;
-                  const newVolume = parseFloat(e.target.value);
-                  videoRef.current.volume = newVolume;
-                  setVolume(newVolume);
-                  setIsMuted(newVolume === 0);
-                  }}
-                className="w-20 accent-red-600"
-              />
             </div>
-
-            {/* Bouton téléchargement */}
-            <button 
-              onClick={handleDownload}
-              disabled={downloadStatus.isLoading || downloadStatus.isDownloaded || !downloadStatus.canDownload}
-              className={`transition-colors ${
-                downloadStatus.isDownloaded 
-                  ? 'text-green-400' 
-                  : downloadStatus.canDownload 
-                    ? 'text-white hover:text-red-400' 
-                    : 'text-gray-500 cursor-not-allowed'
-              }`}
-              title={downloadText}
-            >
-              {downloadIcon}
-            </button>
-
-            {/* Favoris */}
-            <button 
-              onClick={toggleFavorite}
-              className="text-white hover:text-red-400 transition-colors"
-            >
-              <Heart className={`w-6 h-6 ${watchData.isFavorite ? 'fill-red-600 text-red-600' : ''}`} />
-            </button>
-
-            {/* Avancer 10 secondes */}
-            <button 
-              onClick={skipForward}
-              className="text-white hover:text-red-400 transition-colors"
-              title="Avancer de 10 secondes"
-            >
-              <SkipForward className="w-6 h-6" />
-            </button>
-
-            {/* Plein écran */}
-            <button
-              onClick={() => {
-                if (!containerRef.current) return;
-                if (!isFullscreen) {
-                  containerRef.current.requestFullscreen();
-                } else {
-                  document.exitFullscreen();
-                }
-                setIsFullscreen(!isFullscreen);
-              }}
-              className="text-white hover:text-red-400 transition-colors"
-            >
-              <Maximize className="w-6 h-6" />
-            </button>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Tooltip d'erreur téléchargement */}
       {downloadStatus.error && (
-        <div className="absolute bottom-32 right-6 bg-red-600 text-white px-4 py-2 rounded-lg max-w-xs">
+        <div className={`absolute bg-red-600 text-white px-4 py-2 rounded-lg max-w-xs ${
+          isMobile ? 'bottom-24 right-2 text-sm' : 'bottom-32 right-6'
+        }`}>
           <p className="text-sm">{downloadStatus.error}</p>
         </div>
       )}
