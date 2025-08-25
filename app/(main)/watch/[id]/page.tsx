@@ -611,7 +611,7 @@ export default function WatchPage({ params }: { params: Promise<{ id: string }> 
         className={`w-full h-full object-contain select-none pointer-events-auto transition-all duration-500 ${
           isRecordingDetected ? 'blur-3xl' : ''
         }`}
-        src={`/api/videos/${watchData.movie.video_file_path?.trim()}`}
+        src={`https://drive.google.com/uc?export=download&id=${watchData.movie.video_file_path?.trim()}`}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onPlay={() => setIsPlaying(true)}
