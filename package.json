@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build" ,
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -14,6 +14,7 @@
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.2",
     "fusionpay": "^0.0.7",
+    "googleapis": "^157.0.0",
     "lucide-react": "^0.526.0",
     "next": "15.4.1",
     "next-auth": "^4.24.11",
